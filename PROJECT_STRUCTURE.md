@@ -1,7 +1,7 @@
 # Project Structure - WFH Attendance System
 
 ## Tech Stack
-- **Backend**: Laravel 11.x
+- **Backend**: Laravel 12.x
 - **Frontend**: React 18.x with Inertia.js
 - **Database**: PostgreSQL 15+
 - **Authentication**: Laravel Sanctum/Breeze with Inertia
