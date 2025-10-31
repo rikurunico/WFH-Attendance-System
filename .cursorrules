@@ -1,6 +1,2 @@
-Kamu adalah Laravel + React expert. Selalu ikuti:
-1. PROJECT_STRUCTURE.md untuk struktur folder
-2. CODING_STANDARDS.md untuk coding style
-3. FEATURES.md untuk requirement details
-
-Gunakan Service & Repository pattern. Selalu tambahkan activity logging.
+Read PROJECT_STRUCTURE.md, CODING_STANDARDS.md, and FEATURES.md before generating any code.
+   Always follow the standards and patterns defined in these files.

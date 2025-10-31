@@ -1,81 +1,71 @@
-# Coding Standards - WFH Attendance System
+# CODING STANDARDS
+
+## Overview
+This document outlines the coding standards and best practices for the WFH Attendance System project. All developers and AI assistants must follow these guidelines to ensure code consistency, maintainability, and performance.
+
+---
 
 ## General Principles
-- Follow PSR-12 coding style for PHP
-- Follow Airbnb JavaScript Style Guide for React
-- Write clean, readable, and maintainable code
-- DRY (Don't Repeat Yourself) principle
-- SOLID principles untuk PHP classes
 
-## PHP/Laravel Standards
+1. **Write Clean Code**: Code should be self-documenting with clear variable and function names
+2. **DRY Principle**: Don't Repeat Yourself - extract reusable logic
+3. **SOLID Principles**: Follow SOLID design principles for OOP
+4. **Security First**: Always validate input, sanitize output, and prevent common vulnerabilities
+5. **Performance**: Optimize database queries and minimize API calls
+6. **Testing**: Write tests for critical business logic
 
-### Naming Conventions
+---
 
-#### Classes
-```php
-// PascalCase untuk class names
-class AttendanceService {}
-class WorkHourCalculationService {}
-```
+## Backend (Laravel) Standards
 
-#### Methods
-```php
-// camelCase untuk method names
-public function calculateDailyWorkHours() {}
-public function checkUserPermission() {}
-```
+### File and Class Naming Conventions
 
-#### Variables
-```php
-// camelCase untuk variables
-$totalWorkHours = 0;
-$isOvertime = false;
-$attendanceRecords = [];
-```
-
-#### Database Tables & Columns
-```php
-// snake_case untuk table dan column names
-Schema::create('attendances', function (Blueprint $table) {
-    $table->timestamp('check_in_at');
-    $table->timestamp('check_out_at')->nullable();
-    $table->integer('duration_minutes')->default(0);
-    $table->boolean('is_overtime')->default(false);
-});
-```
-
-### Controller Standards
+#### Controllers
+- **Naming**: PascalCase, singular noun + "Controller"
+- **Example**: `AttendanceController`, `UserManagementController`
+- **Location**: `app/Http/Controllers/Api/`
 
 ```php
-// Controller hanya handle request/response, NO business logic
+// ✅ GOOD
 class AttendanceController extends Controller
 {
-    public function __construct(
-        private AttendanceService $attendanceService
-    ) {}
+    public function checkIn(CheckInRequest $request) { }
+}
 
-    public function checkIn(CheckInRequest $request)
-    {
-        // 1. Get validated data
-        $data = $request->validated();
-        
-        // 2. Delegate to service
-        $attendance = $this->attendanceService->checkIn(
-            auth()->user(),
-            $data
-        );
-        
-        // 3. Return response
-        return redirect()->route('employee.dashboard')
-            ->with('success', 'Check-in berhasil!');
-    }
+// ❌ BAD
+class attendanceController extends Controller
+{
+    public function CheckIn($request) { }
 }
 ```
 
-### Service Layer Standards
+#### Models
+- **Naming**: PascalCase, singular noun
+- **Example**: `User`, `Attendance`, `Task`
+- **Location**: `app/Models/`
 
 ```php
-// Service berisi business logic
+// ✅ GOOD
+class Attendance extends Model
+{
+    protected $fillable = ['user_id', 'check_in', 'check_out', 'date'];
+}
+
+// ❌ BAD
+class attendances extends Model
+{
+    public $fillable = ['user_id'];
+}
+```
+
+#### Services
+- **Naming**: PascalCase, noun + "Service"
+- **Example**: `AttendanceService`, `ReportService`
+- **Location**: `app/Services/`
+- **Purpose**: Business logic, orchestrate repositories
+
+```php
+// ✅ GOOD
 class AttendanceService
 {
     public function __construct(
@@ -83,463 +73,668 @@ class AttendanceService
         private ActivityLogService $activityLogService
     ) {}
 
-    public function checkIn(User $user, array $data): Attendance
+    public function checkIn(User $user, array $tasks): Attendance
     {
-        // Validate business rules
-        if ($this->hasActiveCheckIn($user)) {
-            throw new \Exception('Anda masih dalam sesi check-in aktif');
-        }
-
-        // Create attendance
-        $attendance = $this->attendanceRepository->create([
-            'user_id' => $user->id,
-            'check_in_at' => now(),
-            'status' => AttendanceStatusEnum::CHECKED_IN,
-        ]);
-
-        // Create tasks
-        foreach ($data['tasks'] as $taskDescription) {
-            $attendance->tasks()->create([
-                'description' => $taskDescription,
-                'is_completed' => false,
-            ]);
-        }
-
-        // Log activity
-        $this->activityLogService->log(
-            ActivityTypeEnum::CHECK_IN,
-            "Check-in pada " . now()->format('H:i')
-        );
-
-        return $attendance;
-    }
-
-    private function hasActiveCheckIn(User $user): bool
-    {
-        return $this->attendanceRepository
-            ->findActiveCheckIn($user->id) !== null;
+        // Business logic here
     }
 }
 ```
 
-### Repository Standards
+#### Repositories
+- **Naming**: PascalCase, noun + "Repository"
+- **Example**: `AttendanceRepository`, `UserRepository`
+- **Location**: `app/Repositories/`
+- **Purpose**: Data access layer only
 
 ```php
-// Repository handle database queries ONLY
+// ✅ GOOD
 class AttendanceRepository
 {
-    public function create(array $data): Attendance
-    {
-        return Attendance::create($data);
-    }
-
-    public function findActiveCheckIn(int $userId): ?Attendance
+    public function findByUserAndDate(int $userId, Carbon $date): ?Attendance
     {
         return Attendance::where('user_id', $userId)
-            ->where('status', AttendanceStatusEnum::CHECKED_IN)
+            ->whereDate('date', $date)
             ->first();
     }
-
-    public function getDailyAttendances(int $userId, Carbon $date): Collection
-    {
-        return Attendance::where('user_id', $userId)
-            ->whereDate('check_in_at', $date)
-            ->with('tasks')
-            ->get();
-    }
 }
 ```
 
-### Query Optimization
+#### Requests (Form Validation)
+- **Naming**: PascalCase, action/noun + "Request"
+- **Example**: `CheckInRequest`, `UpdateUserRequest`
+- **Location**: `app/Http/Requests/`
 
 ```php
-// ALWAYS use eager loading untuk prevent N+1 queries
-// BAD ❌
-$attendances = Attendance::all();
-foreach ($attendances as $attendance) {
-    echo $attendance->user->name; // N+1 query
-}
-
-// GOOD ✅
-$attendances = Attendance::with('user', 'tasks')->get();
-foreach ($attendances as $attendance) {
-    echo $attendance->user->name;
-}
-
-// Use Query Builder untuk complex queries
-$report = DB::table('attendances')
-    ->select(
-        'user_id',
-        DB::raw('DATE(check_in_at) as date'),
-        DB::raw('SUM(duration_minutes) as total_minutes')
-    )
-    ->where('user_id', $userId)
-    ->groupBy('user_id', 'date')
-    ->get();
-```
-
-### Validation Standards
-
-```php
-// Gunakan Form Request untuk validation
+// ✅ GOOD
 class CheckInRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return auth()->check();
+    }
+
     public function rules(): array
     {
         return [
-            'tasks' => 'required|array|min:1|max:10',
-            'tasks.*' => 'required|string|max:255',
+            'tasks' => 'required|array|min:1',
+            'tasks.*.title' => 'required|string|max:255',
         ];
     }
+}
+```
 
-    public function messages(): array
+#### Resources (API Responses)
+- **Naming**: PascalCase, noun + "Resource"
+- **Example**: `AttendanceResource`, `UserResource`
+- **Location**: `app/Http/Resources/`
+
+```php
+// ✅ GOOD
+class AttendanceResource extends JsonResource
+{
+    public function toArray($request): array
     {
         return [
-            'tasks.required' => 'Minimal 1 task harus diinput',
-            'tasks.*.required' => 'Deskripsi task tidak boleh kosong',
+            'id' => $this->id,
+            'check_in' => $this->check_in->toIso8601String(),
+            'check_out' => $this->check_out?->toIso8601String(),
+            'total_hours' => $this->total_hours,
+            'tasks' => TaskResource::collection($this->whenLoaded('tasks')),
         ];
     }
+}
+```
+
+### Method Naming Conventions
+
+#### Controller Methods
+- **REST Convention**: Use standard HTTP verbs
+- **camelCase**: Always use camelCase for method names
+
+```php
+// ✅ GOOD
+public function index()      // GET - List all
+public function store()      // POST - Create
+public function show($id)    // GET - Show one
+public function update($id)  // PUT/PATCH - Update
+public function destroy($id) // DELETE - Delete
+
+// Custom actions
+public function checkIn(CheckInRequest $request)
+public function checkOut(CheckOutRequest $request)
+
+// ❌ BAD
+public function CheckIn()
+public function check_in()
+```
+
+#### Service Methods
+- **Descriptive names**: Use verb + noun pattern
+
+```php
+// ✅ GOOD
+public function calculateTotalHours(Carbon $checkIn, Carbon $checkOut): float
+public function getEmployeeReport(int $userId, Carbon $startDate, Carbon $endDate): array
+public function checkInEmployee(User $user, array $tasks): Attendance
+
+// ❌ BAD
+public function calc()
+public function getReport()
+```
+
+### Database Query Standards
+
+#### Use Query Builder (Preferred)
+```php
+// ✅ GOOD - Use Query Builder with proper indexing
+Attendance::where('user_id', $userId)
+    ->whereDate('date', $date)
+    ->with('tasks')
+    ->first();
+
+// ✅ GOOD - Use eager loading to prevent N+1
+User::with('attendances.tasks')->get();
+
+// ❌ BAD - N+1 query problem
+$users = User::all();
+foreach ($users as $user) {
+    $user->attendances; // This triggers additional queries
+}
+```
+
+#### Avoid Raw Queries Unless Necessary
+```php
+// ❌ AVOID unless absolutely necessary
+DB::select("SELECT * FROM users WHERE email = ?", [$email]);
+
+// ✅ GOOD
+User::where('email', $email)->first();
+```
+
+#### Always Use Parameter Binding
+```php
+// ✅ GOOD
+DB::table('users')->where('email', $email)->get();
+
+// ❌ NEVER - SQL Injection risk
+DB::select("SELECT * FROM users WHERE email = '$email'");
+```
+
+### Validation Rules
+
+#### Always Validate Input
+```php
+// ✅ GOOD
+public function rules(): array
+{
+    return [
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|min:8|confirmed',
+        'tasks' => 'required|array|min:1|max:20',
+        'tasks.*.title' => 'required|string|max:255',
+    ];
+}
+```
+
+#### Custom Validation Messages
+```php
+public function messages(): array
+{
+    return [
+        'tasks.required' => 'You must provide at least one task.',
+        'tasks.*.title.required' => 'Each task must have a title.',
+    ];
 }
 ```
 
 ### Error Handling
 
+#### Use Try-Catch for Critical Operations
 ```php
-// Gunakan try-catch untuk handle exceptions
-try {
-    $attendance = $this->attendanceService->checkIn($user, $data);
-    return response()->json(['success' => true]);
-} catch (\Exception $e) {
-    Log::error('Check-in error: ' . $e->getMessage(), [
-        'user_id' => $user->id,
-        'data' => $data
-    ]);
-    
-    return response()->json([
-        'success' => false,
-        'message' => 'Terjadi kesalahan saat check-in'
-    ], 500);
-}
-
-// Custom Exception untuk business logic errors
-class AlreadyCheckedInException extends \Exception
+// ✅ GOOD
+public function checkIn(CheckInRequest $request): JsonResponse
 {
-    public function __construct()
-    {
-        parent::__construct('Anda sudah melakukan check-in aktif');
+    try {
+        $attendance = $this->attendanceService->checkIn(
+            auth()->user(),
+            $request->validated()['tasks']
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => new AttendanceResource($attendance),
+        ], 201);
+    } catch (\Exception $e) {
+        Log::error('Check-in failed: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to check in. Please try again.',
+        ], 500);
     }
 }
 ```
 
-## React/JavaScript Standards
+#### Return Consistent JSON Responses
+```php
+// ✅ GOOD - Success response
+return response()->json([
+    'success' => true,
+    'data' => $data,
+    'message' => 'Operation successful',
+], 200);
+
+// ✅ GOOD - Error response
+return response()->json([
+    'success' => false,
+    'message' => 'Validation failed',
+    'errors' => $validator->errors(),
+], 422);
+```
+
+### Security Standards
+
+#### Authentication & Authorization
+```php
+// ✅ GOOD - Use middleware for route protection
+Route::middleware(['auth:sanctum', 'role:manager'])->group(function () {
+    Route::get('/users', [UserManagementController::class, 'index']);
+});
+
+// ✅ GOOD - Check permissions in controller
+public function destroy(User $user)
+{
+    if (auth()->user()->role !== UserRole::MANAGER) {
+        abort(403, 'Unauthorized action.');
+    }
+    
+    $user->delete();
+}
+```
+
+#### Prevent Mass Assignment
+```php
+// ✅ GOOD
+protected $fillable = ['name', 'email', 'role'];
+protected $guarded = ['id', 'password'];
+
+// ❌ BAD
+protected $guarded = [];
+```
+
+#### Hash Passwords
+```php
+// ✅ GOOD
+User::create([
+    'name' => $request->name,
+    'email' => $request->email,
+    'password' => Hash::make($request->password),
+]);
+
+// ❌ BAD
+User::create([
+    'password' => $request->password, // Plain text!
+]);
+```
+
+### Performance Optimization
+
+#### Eager Loading
+```php
+// ✅ GOOD
+$attendances = Attendance::with(['user', 'tasks'])
+    ->whereBetween('date', [$startDate, $endDate])
+    ->get();
+
+// ❌ BAD - N+1 problem
+$attendances = Attendance::all();
+foreach ($attendances as $attendance) {
+    $attendance->user; // Lazy loading
+    $attendance->tasks; // Lazy loading
+}
+```
+
+#### Use Chunking for Large Datasets
+```php
+// ✅ GOOD
+Attendance::chunk(100, function ($attendances) {
+    foreach ($attendances as $attendance) {
+        // Process
+    }
+});
+```
+
+#### Cache Expensive Queries
+```php
+// ✅ GOOD
+$holidays = Cache::remember('holidays_2024', 3600, function () {
+    return Holiday::whereYear('date', 2024)->get();
+});
+```
+
+#### Database Indexing
+```php
+// ✅ GOOD - Add indexes in migrations
+Schema::create('attendances', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->dateTime('check_in');
+    $table->dateTime('check_out')->nullable();
+    $table->date('date');
+    $table->decimal('total_hours', 5, 2)->default(0);
+    $table->timestamps();
+    
+    // Indexes for performance
+    $table->index(['user_id', 'date']);
+    $table->index('date');
+});
+```
+
+### Logging Standards
+
+#### Log Important Events
+```php
+// ✅ GOOD
+Log::info('User checked in', [
+    'user_id' => $user->id,
+    'check_in' => $checkIn,
+]);
+
+Log::error('Auto checkout failed', [
+    'attendance_id' => $attendance->id,
+    'error' => $e->getMessage(),
+]);
+```
+
+---
+
+## Frontend (React) Standards
+
+### File and Component Naming
+
+#### Components
+- **PascalCase** for component files
+- **Example**: `CheckInModal.jsx`, `UserManagement.jsx`
+
+```jsx
+// ✅ GOOD - CheckInModal.jsx
+export const CheckInModal = ({ isOpen, onClose }) => {
+    return <div>...</div>;
+};
+
+// ❌ BAD - checkInModal.jsx
+export const checkInModal = ({ isOpen, onClose }) => {
+    return <div>...</div>;
+};
+```
+
+#### Hooks
+- **camelCase** starting with "use"
+- **Example**: `useAuth.js`, `useAttendance.js`
+
+```javascript
+// ✅ GOOD - useAuth.js
+export const useAuth = () => {
+    const [user, setUser] = useState(null);
+    // ...
+    return { user, login, logout };
+};
+```
+
+#### API Functions
+- **camelCase** with descriptive names
+- **Example**: `checkIn`, `getUserReport`, `updateTask`
+
+```javascript
+// ✅ GOOD - attendance.api.js
+export const checkIn = async (tasks) => {
+    const response = await apiClient.post('/attendance/check-in', { tasks });
+    return response.data;
+};
+
+export const getUserReport = async (userId, startDate, endDate) => {
+    const response = await apiClient.get(`/reports/user/${userId}`, {
+        params: { start_date: startDate, end_date: endDate }
+    });
+    return response.data;
+};
+```
 
 ### Component Structure
 
+#### Functional Components with Hooks
 ```jsx
-// Functional components with hooks
-// Components dalam PascalCase
+// ✅ GOOD
 import { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function CheckInForm({ user, activeTasks = [] }) {
-    // 1. Hooks di bagian atas
-    const [tasks, setTasks] = useState(['']);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+export const Dashboard = () => {
+    const { user } = useAuth();
+    const [attendances, setAttendances] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // 2. useEffect
     useEffect(() => {
-        // Component did mount logic
+        fetchAttendances();
     }, []);
 
-    // 3. Event handlers
-    const handleAddTask = () => {
-        setTasks([...tasks, '']);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        setIsSubmitting(true);
-        router.post('/attendance/check-in', {
-            tasks: tasks.filter(t => t.trim() !== '')
-        }, {
-            onSuccess: () => {
-                // Success callback
-            },
-            onError: () => {
-                setIsSubmitting(false);
-            }
-        });
-    };
-
-    // 4. Render
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            {/* JSX content */}
-        </form>
-    );
-}
-```
-
-### Naming Conventions (React)
-
-```jsx
-// Components: PascalCase
-function AttendanceCard() {}
-function TaskList() {}
-
-// Functions/Hooks: camelCase
-function calculateWorkHours() {}
-function useAttendance() {}
-
-// Constants: UPPER_SNAKE_CASE
-const MAX_TASKS_PER_SESSION = 10;
-const DEFAULT_WORK_HOURS = 7;
-
-// Props destructuring
-function TaskItem({ task, onComplete, isCompleted = false }) {
-    // Component logic
-}
-```
-
-### Custom Hooks
-
-```javascript
-// Reusable logic dalam custom hooks
-// Hook names start with 'use'
-export function useAttendance() {
-    const [activeSession, setActiveSession] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    const checkIn = async (tasks) => {
-        setLoading(true);
+    const fetchAttendances = async () => {
         try {
-            const response = await router.post('/attendance/check-in', { tasks });
-            setActiveSession(response.data);
+            setLoading(true);
+            const data = await getAttendances();
+            setAttendances(data);
+        } catch (error) {
+            console.error('Failed to fetch attendances', error);
         } finally {
             setLoading(false);
         }
     };
 
-    return { activeSession, loading, checkIn };
-}
-```
+    if (loading) return <Loading />;
 
-### Props Validation
-
-```jsx
-// Gunakan PropTypes atau TypeScript
-import PropTypes from 'prop-types';
-
-AttendanceCard.propTypes = {
-    attendance: PropTypes.shape({
-        id: PropTypes.number.isRequired,
-        checkInAt: PropTypes.string.isRequired,
-        checkOutAt: PropTypes.string,
-        durationMinutes: PropTypes.number
-    }).isRequired,
-    onEdit: PropTypes.func,
-    onDelete: PropTypes.func
-};
-
-AttendanceCard.defaultProps = {
-    onEdit: () => {},
-    onDelete: () => {}
-};
-```
-
-## Performance Best Practices
-
-### Database Indexing
-
-```php
-// ALWAYS tambahkan index untuk foreign keys dan frequently queried columns
-Schema::create('attendances', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained()->onDelete('cascade');
-    $table->timestamp('check_in_at');
-    $table->timestamp('check_out_at')->nullable();
-    $table->enum('status', ['checked_in', 'checked_out', 'auto_checked_out']);
-    $table->timestamps();
-
-    // Indexes untuk query performance
-    $table->index('user_id');
-    $table->index('check_in_at');
-    $table->index(['user_id', 'check_in_at']); // Composite index
-    $table->index('status');
-});
-```
-
-### Caching Strategy
-
-```php
-// Cache data yang jarang berubah
-use Illuminate\Support\Facades\Cache;
-
-// Cache holidays list (1 day)
-public function getHolidays(): Collection
-{
-    return Cache::remember('holidays', 86400, function () {
-        return Holiday::orderBy('date')->get();
-    });
-}
-
-// Clear cache ketika data berubah
-public function createHoliday(array $data): Holiday
-{
-    $holiday = Holiday::create($data);
-    Cache::forget('holidays');
-    return $holiday;
-}
-
-// Cache per user data (short duration)
-public function getTodayWorkHours(User $user): int
-{
-    $cacheKey = "user.{$user->id}.today.work_hours";
-    
-    return Cache::remember($cacheKey, 300, function () use ($user) {
-        return $this->calculateTodayWorkHours($user);
-    });
-}
-```
-
-### React Performance
-
-```jsx
-// Gunakan useMemo untuk expensive calculations
-import { useMemo } from 'react';
-
-function WorkHourSummary({ attendances }) {
-    const totalHours = useMemo(() => {
-        return attendances.reduce((sum, att) => 
-            sum + att.durationMinutes, 0
-        ) / 60;
-    }, [attendances]);
-
-    return <div>Total: {totalHours.toFixed(2)} jam</div>;
-}
-
-// Gunakan React.memo untuk prevent unnecessary re-renders
-import { memo } from 'react';
-
-const TaskItem = memo(function TaskItem({ task, onToggle }) {
     return (
-        <div onClick={() => onToggle(task.id)}>
-            {task.description}
+        <div className="dashboard">
+            {/* Component JSX */}
         </div>
     );
-});
+};
 ```
 
-## Security Best Practices
+### State Management
 
-### Input Validation & Sanitization
+#### Use Context for Global State
+```javascript
+// ✅ GOOD - AuthContext.jsx
+export const AuthContext = createContext(null);
 
-```php
-// ALWAYS validate dan sanitize user input
-public function rules(): array
-{
-    return [
-        'email' => 'required|email|max:255',
-        'name' => 'required|string|max:100',
-        'tasks.*' => 'required|string|max:255',
-        // Gunakan specific rules, jangan hanya 'string'
-    ];
-}
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-// Sanitize input di Service layer jika needed
-$cleanDescription = strip_tags($data['description']);
+    const login = async (email, password) => {
+        const data = await loginApi(email, password);
+        setUser(data.user);
+        localStorage.setItem('token', data.token);
+    };
+
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('token');
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
 ```
 
-### Authorization
-
-```php
-// Gunakan Policy untuk authorization logic
-class AttendancePolicy
-{
-    public function update(User $user, Attendance $attendance): bool
-    {
-        // Manager bisa edit semua, karyawan hanya milik sendiri
-        return $user->role === RoleEnum::MANAGER || 
-               $user->id === $attendance->user_id;
-    }
-}
-
-// Di controller
-public function update(Request $request, Attendance $attendance)
-{
-    $this->authorize('update', $attendance);
-    
-    // Update logic
-}
-```
-
-### SQL Injection Prevention
-
-```php
-// NEVER use raw queries dengan user input
-// BAD ❌
-$users = DB::select("SELECT * FROM users WHERE email = '{$email}'");
-
-// GOOD ✅ - use parameter binding
-$users = DB::select('SELECT * FROM users WHERE email = ?', [$email]);
-
-// BEST ✅ - use Query Builder/Eloquent
-$users = User::where('email', $email)->get();
-```
-
-### XSS Prevention
-
+#### Local State for Component-Specific Data
 ```jsx
-// React automatically escapes output, tapi tetap hati-hati
-// Hindari dangerouslySetInnerHTML kecuali absolutely necessary
-
-// SAFE ✅
-<div>{user.name}</div>
-
-// DANGEROUS ❌ - hanya jika user.bio sudah di-sanitize di backend
-<div dangerouslySetInnerHTML={{ __html: user.bio }} />
+// ✅ GOOD
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [selectedTask, setSelectedTask] = useState(null);
 ```
 
-## Testing Standards
+### API Calls
 
-```php
-// Feature test untuk integration testing
-class AttendanceTest extends TestCase
-{
-    use RefreshDatabase;
+#### Centralized Axios Instance
+```javascript
+// ✅ GOOD - axios.js
+import axios from 'axios';
 
-    public function test_employee_can_check_in_with_tasks(): void
-    {
-        $employee = User::factory()->create(['role' => RoleEnum::EMPLOYEE]);
+const apiClient = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
 
-        $response = $this->actingAs($employee)
-            ->post('/attendance/check-in', [
-                'tasks' => [
-                    'Fix bug #123',
-                    'Review PR #456'
-                ]
-            ]);
+// Request interceptor
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('attendances', [
-            'user_id' => $employee->id,
-            'status' => AttendanceStatusEnum::CHECKED_IN
-        ]);
-        $this->assertDatabaseCount('tasks', 2);
+// Response interceptor
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
     }
-}
+);
+
+export default apiClient;
 ```
+
+### Error Handling
+
+#### Use Try-Catch with User Feedback
+```jsx
+// ✅ GOOD
+const handleCheckIn = async () => {
+    try {
+        setLoading(true);
+        await checkIn(tasks);
+        toast.success('Checked in successfully!');
+        navigate('/dashboard');
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to check in');
+    } finally {
+        setLoading(false);
+    }
+};
+```
+
+### Form Handling
+
+#### Use React Hook Form
+```jsx
+// ✅ GOOD
+import { useForm } from 'react-hook-form';
+
+export const CheckInForm = ({ onSubmit }) => {
+    const { register, handleSubmit, formState: { errors } } = useForm();
+
+    return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <input
+                {...register('task', {
+                    required: 'Task is required',
+                    maxLength: { value: 255, message: 'Max 255 characters' }
+                })}
+            />
+            {errors.task && <span>{errors.task.message}</span>}
+        </form>
+    );
+};
+```
+
+### Performance Optimization
+
+#### Memoization
+```jsx
+// ✅ GOOD - Use useMemo for expensive calculations
+const totalHours = useMemo(() => {
+    return attendances.reduce((sum, att) => sum + att.total_hours, 0);
+}, [attendances]);
+
+// ✅ GOOD - Use useCallback for functions passed as props
+const handleDelete = useCallback((id) => {
+    deleteTask(id);
+}, []);
+```
+
+#### Lazy Loading Routes
+```javascript
+// ✅ GOOD
+import { lazy, Suspense } from 'react';
+
+const Dashboard = lazy(() => import('./pages/employee/Dashboard'));
+const Reports = lazy(() => import('./pages/manager/Reports'));
+
+// In routes
+<Suspense fallback={<Loading />}>
+    <Dashboard />
+</Suspense>
+```
+
+---
 
 ## Code Review Checklist
 
-- [ ] Apakah mengikuti PSR-12 / coding standards?
-- [ ] Apakah ada N+1 query problem?
-- [ ] Apakah sudah ada validation?
-- [ ] Apakah sudah ada error handling?
-- [ ] Apakah sudah ada index di database?
-- [ ] Apakah authorization sudah benar?
-- [ ] Apakah activity log sudah tercatat?
-- [ ] Apakah variable naming jelas dan descriptive?
-- [ ] Apakah ada hardcoded values yang seharusnya di config?
-- [ ] Apakah reusable code sudah di-extract ke service/helper?
+### Before Committing
+- [ ] Code follows naming conventions
+- [ ] No console.log() in production code
+- [ ] All variables have meaningful names
+- [ ] Functions are small and do one thing
+- [ ] No hardcoded values (use constants/env)
+- [ ] Error handling is implemented
+- [ ] Security vulnerabilities checked
+- [ ] Performance optimizations applied
+- [ ] Comments added for complex logic
+- [ ] Tests written for critical features
+
+### Git Commit Messages
+```
+// ✅ GOOD
+feat: Add check-in functionality with task management
+fix: Resolve auto-checkout cron job timing issue
+refactor: Extract attendance calculation to service layer
+docs: Update API documentation for new endpoints
+
+// ❌ BAD
+update
+fix bug
+changes
+```
+
+---
+
+## Testing Standards
+
+### Backend Tests
+```php
+// ✅ GOOD
+public function test_user_can_check_in_with_valid_tasks()
+{
+    $user = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+    
+    $response = $this->actingAs($user)
+        ->postJson('/api/v1/attendance/check-in', [
+            'tasks' => [
+                ['title' => 'Complete feature X'],
+                ['title' => 'Fix bug Y'],
+            ]
+        ]);
+    
+    $response->assertStatus(201)
+        ->assertJsonStructure(['success', 'data']);
+}
+```
+
+### Frontend Tests
+```javascript
+// ✅ GOOD
+test('renders check-in button when not checked in', () => {
+    render(<Dashboard />);
+    expect(screen.getByText('Check In')).toBeInTheDocument();
+});
+```
+
+---
+
+## Documentation Standards
+
+### Code Comments
+```php
+// ✅ GOOD
+/**
+ * Calculate total working hours between check-in and check-out
+ * 
+ * @param Carbon $checkIn
+ * @param Carbon $checkOut
+ * @return float Total hours in decimal format (e.g., 7.5)
+ */
+public function calculateTotalHours(Carbon $checkIn, Carbon $checkOut): float
+{
+    return round($checkIn->diffInMinutes($checkOut) / 60, 2);
+}
+```
+
+### API Documentation
+- Document all endpoints with examples
+- Include request/response formats
+- Specify authentication requirements
+- List possible error codes

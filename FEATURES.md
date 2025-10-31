@@ -1,767 +1,1194 @@
-# Features & Requirements - WFH Attendance System
+# FEATURES & USER STORIES
 
 ## Overview
-Aplikasi untuk memantau jam kerja karyawan IT yang WFH dengan sistem check-in/check-out, task tracking, dan pelaporan jam kerja.
-
-**Target Jam Kerja**: 7 jam per hari (dapat dicicil dalam multiple sesi)
+This document describes all features, user stories, business logic, API endpoints, and validation rules for the WFH Attendance & Task Tracking System.
 
 ---
 
-## User Roles
-
-### 1. Employee (Karyawan)
-- Check-in dengan input task list
-- Check-out dengan checklist task completion
-- Melihat rekap pribadi (jam kerja dan task harian)
-
-### 2. Manager
-- Melihat rekap semua karyawan
-- Edit/delete data attendance dan task
-- Manajemen user (CRUD karyawan)
-- Manajemen hari libur
-- Manajemen cuti karyawan
-- Melihat log aktivitas semua user
+## Table of Contents
+1. [Authentication & Authorization](#1-authentication--authorization)
+2. [Employee Features](#2-employee-features)
+3. [Manager Features](#3-manager-features)
+4. [System Features](#4-system-features)
+5. [API Endpoints Reference](#5-api-endpoints-reference)
 
 ---
 
-## Feature 1: Authentication & Authorization
+## 1. Authentication & Authorization
 
-### F1.1 - Login System
-**User Story**: Sebagai user (karyawan/manager), saya ingin login dengan username dan password untuk mengakses sistem.
+### Feature 1.1: User Login
 
-**Requirements**:
-- Form login dengan email dan password
-- Session-based authentication menggunakan Laravel Sanctum/Breeze
-- Remember me functionality
-- Error message yang jelas jika login gagal
-- Redirect ke dashboard sesuai role setelah login
+**User Story:**
+> As a user (employee or manager), I want to log in with my email and password so that I can access my dashboard.
 
-**Validation Rules**:
+**Business Logic:**
+- System validates email format and password
+- System checks if user exists and credentials match
+- System generates Sanctum token for authenticated session
+- System returns user data and role
+- Token stored in frontend localStorage
+- User redirected to appropriate dashboard based on role
+
+**Validation Rules:**
+- Email: required, valid email format, exists in database
+- Password: required, minimum 8 characters
+
+**API Endpoint:**
 ```
-email: required, email, exists in users table
-password: required, min:8
+POST /api/v1/auth/login
 ```
 
-**Acceptance Criteria**:
-- ✅ User bisa login dengan credentials yang valid
-- ✅ User tidak bisa login dengan credentials yang invalid
-- ✅ Manager redirect ke manager dashboard
-- ✅ Employee redirect ke employee dashboard
-- ✅ Login attempt dicatat di activity log
+**Request Body:**
+```json
+{
+    "email": "employee@example.com",
+    "password": "password123"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "employee@example.com",
+            "role": "employee"
+        },
+        "token": "1|xyz123abc456..."
+    },
+    "message": "Login successful"
+}
+```
+
+**Response (Error - 401):**
+```json
+{
+    "success": false,
+    "message": "Invalid credentials"
+}
+```
 
 ---
 
-## Feature 2: Employee - Check-In
+### Feature 1.2: User Logout
 
-### F2.1 - Check-In dengan Task List
-**User Story**: Sebagai karyawan, saya ingin check-in di awal kerja dengan memasukkan list task yang akan dikerjakan.
+**User Story:**
+> As a logged-in user, I want to log out so that my session ends securely.
 
-**Requirements**:
-- Button "Check-In" di dashboard employee
-- Form untuk input multiple tasks (minimal 1 task, maksimal 10 tasks)
-- Simpan waktu check-in otomatis saat submit
-- Validasi: tidak bisa check-in jika masih ada sesi check-in aktif
-- Task list bisa dinamis (add/remove task fields sebelum submit)
+**Business Logic:**
+- System revokes current access token
+- Frontend removes token from localStorage
+- User redirected to login page
 
-**Validation Rules**:
+**API Endpoint:**
 ```
-tasks: required, array, min:1, max:10
-tasks.*: required, string, max:255
+POST /api/v1/auth/logout
 ```
 
-**Flow**:
-1. Karyawan klik "Check-In"
-2. Modal/page muncul dengan form input tasks
-3. Karyawan input deskripsi task (bisa tambah/kurang field)
-4. Karyawan submit form
-5. System create attendance record dengan status "checked_in"
-6. System create task records linked ke attendance
-7. Redirect ke dashboard dengan notifikasi sukses
-
-**Database Changes**:
-```sql
-attendances table:
-- id
-- user_id (FK to users)
-- check_in_at (timestamp)
-- check_out_at (timestamp, nullable)
-- status (enum: checked_in, checked_out, auto_checked_out)
-- duration_minutes (integer, default 0)
-- is_overtime (boolean, default false)
-
-tasks table:
-- id
-- attendance_id (FK to attendances)
-- description (text)
-- is_completed (boolean, default false)
-- blocker_reason (text, nullable)
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "message": "Logged out successfully"
+}
 ```
-
-**Acceptance Criteria**:
-- ✅ Karyawan bisa check-in dengan minimal 1 task
-- ✅ Sistem record waktu check-in secara otomatis
-- ✅ Karyawan tidak bisa check-in 2x tanpa check-out
-- ✅ Task tersimpan dan linked ke attendance session
-- ✅ Check-in dicatat di activity log
-
-### F2.2 - Multiple Check-In per Hari (Cicilan)
-**User Story**: Sebagai karyawan, saya ingin bisa check-in beberapa kali dalam sehari untuk mencicil 7 jam kerja.
-
-**Requirements**:
-- Karyawan bisa check-in lagi setelah check-out
-- Setiap check-in baru bisa:
-  - Input task baru, ATAU
-  - Melanjutkan task yang belum selesai dari sesi sebelumnya, ATAU
-  - Kombinasi keduanya
-- System hitung total durasi dari semua sesi dalam 1 hari
-
-**Flow untuk Check-In ke-2 dst**:
-1. Karyawan klik "Check-In" lagi setelah pernah check-out
-2. Form muncul dengan:
-   - Input untuk task baru
-   - Checkbox list task yang belum selesai dari sesi sebelumnya (optional untuk di-carry forward)
-3. Karyawan pilih task lama atau input task baru
-4. Submit dan mulai sesi baru
-
-**Acceptance Criteria**:
-- ✅ Karyawan bisa check-in multiple kali dalam 1 hari
-- ✅ Sistem tampilkan total jam kerja hari ini (dari semua sesi)
-- ✅ Karyawan bisa pilih melanjutkan task lama atau buat baru
-- ✅ Setiap sesi check-in tercatat terpisah di database
 
 ---
 
-## Feature 3: Employee - Check-Out
+## 2. Employee Features
 
-### F3.1 - Check-Out dengan Task Completion
-**User Story**: Sebagai karyawan, saya ingin check-out setelah selesai kerja dengan melakukan checklist task yang sudah dikerjakan.
+### Feature 2.1: Check-In with Tasks
 
-**Requirements**:
-- Button "Check-Out" hanya muncul jika ada sesi check-in aktif
-- Form checklist untuk semua task dari sesi check-in aktif
-- Setiap task bisa di-mark sebagai completed atau incomplete
-- Jika task incomplete, wajib isi alasan/blocker
-- Sistem otomatis hitung durasi kerja saat check-out
-- Sistem deteksi jika jam kerja > 7 jam (overtime)
+**User Story:**
+> As an employee, I want to check in at the start of my work session and provide a list of tasks I plan to work on.
 
-**Validation Rules**:
+**Business Logic:**
+- Employee can only check in if they haven't already checked in today OR if they have checked out from a previous session today (installment system)
+- System records current timestamp as check_in
+- System creates attendance record with status "active"
+- System creates task records linked to attendance
+- System logs activity
+- Check-in time can be any time of day (no restriction)
+
+**Validation Rules:**
+- Tasks: required, array, minimum 1 task, maximum 20 tasks
+- Task title: required, string, maximum 255 characters
+- User must not have active (unchecked-out) attendance
+
+**API Endpoint:**
 ```
-tasks: required, array
-tasks.*.is_completed: required, boolean
-tasks.*.blocker_reason: required_if:tasks.*.is_completed,false, string, max:500
+POST /api/v1/attendance/check-in
 ```
 
-**Flow**:
-1. Karyawan klik "Check-Out"
-2. Form muncul dengan checklist semua task dari sesi ini
-3. Karyawan centang task yang selesai
-4. Untuk task yang belum selesai, karyawan wajib isi blocker reason
-5. Karyawan submit
-6. System update attendance record:
-   - Set check_out_at = current timestamp
-   - Set status = "checked_out"
-   - Calculate duration_minutes = check_out_at - check_in_at
-   - Set is_overtime = true jika total hari ini > 7 jam
-7. System update task records dengan completion status dan blocker
-8. Redirect ke dashboard dengan summary jam kerja hari ini
+**Request Body:**
+```json
+{
+    "tasks": [
+        {
+            "title": "Implement user authentication module"
+        },
+        {
+            "title": "Fix bug in report generation"
+        },
+        {
+            "title": "Review pull requests"
+        }
+    ]
+}
+```
 
-**Acceptance Criteria**:
-- ✅ Karyawan bisa check-out dari sesi aktif
-- ✅ Semua task harus di-checklist (complete/incomplete)
-- ✅ Wajib isi blocker reason jika task incomplete
-- ✅ Sistem hitung durasi sesi dengan benar
-- ✅ Sistem flag overtime jika total hari ini > 7 jam
-- ✅ Check-out dicatat di activity log
+**Response (Success - 201):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 123,
+        "user_id": 1,
+        "check_in": "2024-01-15T09:00:00.000000Z",
+        "check_out": null,
+        "date": "2024-01-15",
+        "total_hours": 0,
+        "tasks": [
+            {
+                "id": 1,
+                "attendance_id": 123,
+                "title": "Implement user authentication module",
+                "is_completed": false,
+                "blocker_reason": null
+            },
+            {
+                "id": 2,
+                "attendance_id": 123,
+                "title": "Fix bug in report generation",
+                "is_completed": false,
+                "blocker_reason": null
+            }
+        ]
+    },
+    "message": "Checked in successfully"
+}
+```
 
-### F3.2 - Auto Check-Out (23:59)
-**User Story**: Sebagai system admin, saya ingin sistem otomatis check-out karyawan yang lupa check-out di akhir hari.
+**Response (Error - 422):**
+```json
+{
+    "success": false,
+    "message": "You have already checked in. Please check out first.",
+    "errors": {
+        "check_in": ["Active attendance session already exists"]
+    }
+}
+```
 
-**Requirements**:
-- Scheduled command yang berjalan setiap hari jam 23:59
-- Find semua attendance dengan status "checked_in"
-- Auto check-out dengan:
-  - check_out_at = 23:59
-  - status = "auto_checked_out"
-  - Hitung duration
-- Semua task di-mark sebagai incomplete dengan blocker reason = "Auto check-out oleh sistem"
+---
 
-**Implementation**:
+### Feature 2.2: Check-Out with Task Status
+
+**User Story:**
+> As an employee, I want to check out at the end of my work session and mark which tasks I completed, including reasons for incomplete tasks.
+
+**Business Logic:**
+- Employee can only check out if they have active check-in
+- System records current timestamp as check_out
+- System calculates total_hours (difference between check_in and check_out in hours)
+- System updates task statuses and blocker reasons
+- System logs activity
+- If total daily hours < 7, system flags as incomplete workday
+- If total daily hours ≥ 7, system marks day as complete
+- If total daily hours > 7, system records as overtime
+
+**Validation Rules:**
+- Tasks: required, array
+- Task ID: required, exists in database, belongs to current attendance
+- Is completed: required, boolean
+- Blocker reason: required if is_completed = false, string, maximum 500 characters
+- Must have active check-in session
+
+**API Endpoint:**
+```
+POST /api/v1/attendance/check-out
+```
+
+**Request Body:**
+```json
+{
+    "attendance_id": 123,
+    "tasks": [
+        {
+            "id": 1,
+            "is_completed": true,
+            "blocker_reason": null
+        },
+        {
+            "id": 2,
+            "is_completed": false,
+            "blocker_reason": "Waiting for API credentials from third-party vendor"
+        },
+        {
+            "id": 3,
+            "is_completed": true,
+            "blocker_reason": null
+        }
+    ]
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 123,
+        "user_id": 1,
+        "check_in": "2024-01-15T09:00:00.000000Z",
+        "check_out": "2024-01-15T16:30:00.000000Z",
+        "date": "2024-01-15",
+        "total_hours": 7.5,
+        "is_complete": true,
+        "is_overtime": true,
+        "tasks": [
+            {
+                "id": 1,
+                "title": "Implement user authentication module",
+                "is_completed": true,
+                "blocker_reason": null
+            },
+            {
+                "id": 2,
+                "title": "Fix bug in report generation",
+                "is_completed": false,
+                "blocker_reason": "Waiting for API credentials from third-party vendor"
+            }
+        ]
+    },
+    "message": "Checked out successfully. Total hours: 7.5"
+}
+```
+
+---
+
+### Feature 2.3: View Personal Work Report
+
+**User Story:**
+> As an employee, I want to view my daily, weekly, and monthly work reports so that I can track my productivity.
+
+**Business Logic:**
+- Display attendance records with check-in/out times
+- Show total hours worked per day
+- Calculate total hours per week/month
+- Show task completion rate
+- Display incomplete tasks with blockers
+- Highlight days with < 7 hours (incomplete)
+- Highlight days with > 7 hours (overtime)
+- Filter by date range
+
+**API Endpoint:**
+```
+GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "summary": {
+            "total_days_worked": 22,
+            "total_hours": 154.5,
+            "average_hours_per_day": 7.02,
+            "required_hours": 154,
+            "overtime_hours": 0.5,
+            "incomplete_days": 0,
+            "task_completion_rate": 95.5
+        },
+        "attendances": [
+            {
+                "date": "2024-01-15",
+                "sessions": [
+                    {
+                        "check_in": "2024-01-15T09:00:00.000000Z",
+                        "check_out": "2024-01-15T16:30:00.000000Z",
+                        "total_hours": 7.5,
+                        "tasks_completed": 2,
+                        "tasks_incomplete": 1
+                    }
+                ],
+                "daily_total_hours": 7.5,
+                "status": "complete"
+            },
+            {
+                "date": "2024-01-16",
+                "sessions": [
+                    {
+                        "check_in": "2024-01-16T08:00:00.000000Z",
+                        "check_out": "2024-01-16T12:00:00.000000Z",
+                        "total_hours": 4.0,
+                        "tasks_completed": 1,
+                        "tasks_incomplete": 0
+                    },
+                    {
+                        "check_in": "2024-01-16T14:00:00.000000Z",
+                        "check_out": "2024-01-16T17:00:00.000000Z",
+                        "total_hours": 3.0,
+                        "tasks_completed": 2,
+                        "tasks_incomplete": 0
+                    }
+                ],
+                "daily_total_hours": 7.0,
+                "status": "complete"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Feature 2.4: View Today's Status
+
+**User Story:**
+> As an employee, I want to see my current work status for today (whether I'm checked in, hours worked so far, and progress toward 7 hours).
+
+**API Endpoint:**
+```
+GET /api/v1/attendance/today
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "date": "2024-01-15",
+        "is_checked_in": true,
+        "current_session": {
+            "id": 123,
+            "check_in": "2024-01-15T14:00:00.000000Z",
+            "elapsed_hours": 2.5
+        },
+        "today_total_hours": 6.5,
+        "required_hours": 7,
+        "remaining_hours": 0.5,
+        "previous_sessions": [
+            {
+                "check_in": "2024-01-15T09:00:00.000000Z",
+                "check_out": "2024-01-15T13:00:00.000000Z",
+                "total_hours": 4.0
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Feature 2.5: Request Leave
+
+**User Story:**
+> As an employee, I want to request leave/cuti for specific dates so that I can inform my manager about my absence.
+
+**Business Logic:**
+- Employee submits leave request with date range and reason
+- System creates leave record with status "pending"
+- Manager receives notification
+- System prevents check-in during approved leave dates
+
+**Validation Rules:**
+- Start date: required, date, must be future date or today
+- End date: required, date, must be >= start_date
+- Reason: required, string, minimum 10 characters, maximum 500 characters
+
+**API Endpoint:**
+```
+POST /api/v1/leaves
+```
+
+**Request Body:**
+```json
+{
+    "start_date": "2024-02-01",
+    "end_date": "2024-02-03",
+    "reason": "Family emergency - need to travel to hometown"
+}
+```
+
+**Response (Success - 201):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "user_id": 1,
+        "start_date": "2024-02-01",
+        "end_date": "2024-02-03",
+        "reason": "Family emergency - need to travel to hometown",
+        "status": "pending"
+    },
+    "message": "Leave request submitted successfully"
+}
+```
+
+---
+
+### Feature 2.6: Add Tasks to Existing Session
+
+**User Story:**
+> As an employee who is checked in, I want to add new tasks during my work session if I realize there are additional things I need to work on.
+
+**Business Logic:**
+- Employee can only add tasks if they have active check-in
+- New tasks added to current attendance session
+- System logs activity
+
+**Validation Rules:**
+- Tasks: required, array, minimum 1 task
+- Task title: required, string, maximum 255 characters
+- Must have active attendance session
+
+**API Endpoint:**
+```
+POST /api/v1/tasks/add
+```
+
+**Request Body:**
+```json
+{
+    "attendance_id": 123,
+    "tasks": [
+        {
+            "title": "Emergency bug fix for production issue"
+        }
+    ]
+}
+```
+
+**Response (Success - 201):**
+```json
+{
+    "success": true,
+    "data": {
+        "tasks": [
+            {
+                "id": 4,
+                "attendance_id": 123,
+                "title": "Emergency bug fix for production issue",
+                "is_completed": false,
+                "blocker_reason": null
+            }
+        ]
+    },
+    "message": "Tasks added successfully"
+}
+```
+
+---
+
+## 3. Manager Features
+
+### Feature 3.1: View All Employees Dashboard
+
+**User Story:**
+> As a manager, I want to see an overview of all employees' attendance status so that I can monitor team productivity.
+
+**Business Logic:**
+- Display list of all employees
+- Show current status (checked in/out)
+- Show today's hours for each employee
+- Show weekly/monthly hours
+- Highlight employees with incomplete work hours
+- Show employees on leave
+- Filter and search capabilities
+
+**API Endpoint:**
+```
+GET /api/v1/manager/dashboard?date=2024-01-15
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "summary": {
+            "total_employees": 10,
+            "checked_in_now": 7,
+            "on_leave": 1,
+            "average_daily_hours": 7.2
+        },
+        "employees": [
+            {
+                "id": 1,
+                "name": "John Doe",
+                "email": "john@example.com",
+                "status": "checked_in",
+                "current_session": {
+                    "check_in": "2024-01-15T09:00:00.000000Z",
+                    "elapsed_hours": 3.5
+                },
+                "today_total_hours": 3.5,
+                "week_total_hours": 28.0,
+                "month_total_hours": 140.5
+            },
+            {
+                "id": 2,
+                "name": "Jane Smith",
+                "email": "jane@example.com",
+                "status": "checked_out",
+                "current_session": null,
+                "today_total_hours": 7.0,
+                "week_total_hours": 35.0,
+                "month_total_hours": 154.0
+            },
+            {
+                "id": 3,
+                "name": "Bob Wilson",
+                "email": "bob@example.com",
+                "status": "on_leave",
+                "leave": {
+                    "start_date": "2024-01-15",
+                    "end_date": "2024-01-17",
+                    "reason": "Medical leave"
+                }
+            }
+        ]
+    }
+}
+```
+
+---
+
+### Feature 3.2: View Detailed Employee Report
+
+**User Story:**
+> As a manager, I want to view detailed work reports for any employee so that I can evaluate their performance and productivity.
+
+**API Endpoint:**
+```
+GET /api/v1/manager/reports/employee/{userId}?start_date=2024-01-01&end_date=2024-01-31
+```
+
+**Response:** (Similar to Employee's personal report but for any employee)
+
+---
+
+### Feature 3.3: Manage Users (CRUD)
+
+**User Story:**
+> As a manager, I want to create, update, and delete user accounts so that I can manage my team.
+
+#### 3.3.1: Create User
+
+**Validation Rules:**
+- Name: required, string, maximum 255 characters
+- Email: required, valid email, unique in database
+- Password: required, minimum 8 characters, confirmed
+- Role: required, enum (employee, manager)
+
+**API Endpoint:**
+```
+POST /api/v1/manager/users
+```
+
+**Request Body:**
+```json
+{
+    "name": "New Employee",
+    "email": "newemployee@example.com",
+    "password": "SecurePass123!",
+    "password_confirmation": "SecurePass123!",
+    "role": "employee"
+}
+```
+
+**Response (Success - 201):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 11,
+        "name": "New Employee",
+        "email": "newemployee@example.com",
+        "role": "employee",
+        "created_at": "2024-01-15T10:00:00.000000Z"
+    },
+    "message": "User created successfully"
+}
+```
+
+#### 3.3.2: Update User
+
+**API Endpoint:**
+```
+PUT /api/v1/manager/users/{id}
+```
+
+**Request Body:**
+```json
+{
+    "name": "Updated Name",
+    "email": "updated@example.com",
+    "role": "manager"
+}
+```
+
+#### 3.3.3: Delete User
+
+**Business Logic:**
+- Soft delete user (keep records for audit)
+- Cannot delete user with active attendance
+- All attendance history preserved
+
+**API Endpoint:**
+```
+DELETE /api/v1/manager/users/{id}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "message": "User deleted successfully"
+}
+```
+
+---
+
+### Feature 3.4: Edit/Delete Attendance Records
+
+**User Story:**
+> As a manager, I want to edit or delete attendance records to correct mistakes or handle special cases.
+
+#### 3.4.1: Edit Attendance
+
+**Business Logic:**
+- Manager can modify check-in/check-out times
+- System recalculates total_hours automatically
+- System logs this action in activity log
+- Reason required for audit trail
+
+**Validation Rules:**
+- Check-in: required, datetime
+- Check-out: nullable, datetime, must be after check-in
+- Reason: required, string, minimum 10 characters
+
+**API Endpoint:**
+```
+PUT /api/v1/manager/attendances/{id}
+```
+
+**Request Body:**
+```json
+{
+    "check_in": "2024-01-15T09:00:00",
+    "check_out": "2024-01-15T17:00:00",
+    "reason": "Employee forgot to check out, verified via chat"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 123,
+        "user_id": 1,
+        "check_in": "2024-01-15T09:00:00.000000Z",
+        "check_out": "2024-01-15T17:00:00.000000Z",
+        "total_hours": 8.0,
+        "edited_by": 5,
+        "edited_at": "2024-01-15T18:00:00.000000Z",
+        "edit_reason": "Employee forgot to check out, verified via chat"
+    },
+    "message": "Attendance updated successfully"
+}
+```
+
+#### 3.4.2: Delete Attendance
+
+**Business Logic:**
+- Soft delete only (mark as deleted)
+- Requires reason for audit
+- All related tasks also marked as deleted
+
+**API Endpoint:**
+```
+DELETE /api/v1/manager/attendances/{id}
+```
+
+**Request Body:**
+```json
+{
+    "reason": "Duplicate entry - employee checked in twice by mistake"
+}
+```
+
+---
+
+### Feature 3.5: Manage Holidays
+
+**User Story:**
+> As a manager, I want to set company holidays so that employees are not expected to work on those days.
+
+**Business Logic:**
+- Add/edit/delete holiday dates
+- Holiday dates excluded from required work hours calculation
+- Employees cannot check in on holidays (with warning message)
+
+#### 3.5.1: Create Holiday
+
+**Validation Rules:**
+- Date: required, date, unique
+- Name: required, string, maximum 255 characters
+- Description: nullable, string, maximum 500 characters
+
+**API Endpoint:**
+```
+POST /api/v1/manager/holidays
+```
+
+**Request Body:**
+```json
+{
+    "date": "2024-12-25",
+    "name": "Christmas Day",
+    "description": "Company holiday - Christmas celebration"
+}
+```
+
+#### 3.5.2: List Holidays
+
+**API Endpoint:**
+```
+GET /api/v1/holidays?year=2024
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "date": "2024-12-25",
+            "name": "Christmas Day",
+            "description": "Company holiday - Christmas celebration"
+        },
+        {
+            "id": 2,
+            "date": "2024-01-01",
+            "name": "New Year's Day",
+            "description": "Company holiday - New Year celebration"
+        }
+    ]
+}
+```
+
+#### 3.5.3: Update Holiday
+
+**API Endpoint:**
+```
+PUT /api/v1/manager/holidays/{id}
+```
+
+#### 3.5.4: Delete Holiday
+
+**API Endpoint:**
+```
+DELETE /api/v1/manager/holidays/{id}
+```
+
+---
+
+### Feature 3.6: Approve/Reject Leave Requests
+
+**User Story:**
+> As a manager, I want to review and approve or reject employee leave requests.
+
+**Business Logic:**
+- Manager sees all pending leave requests
+- Can approve or reject with optional notes
+- Employee receives notification of decision
+
+#### 3.6.1: List Leave Requests
+
+**API Endpoint:**
+```
+GET /api/v1/manager/leaves?status=pending
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "user": {
+                "id": 1,
+                "name": "John Doe",
+                "email": "john@example.com"
+            },
+            "start_date": "2024-02-01",
+            "end_date": "2024-02-03",
+            "reason": "Family emergency",
+            "status": "pending",
+            "requested_at": "2024-01-15T10:00:00.000000Z"
+        }
+    ]
+}
+```
+
+#### 3.6.2: Approve Leave
+
+**API Endpoint:**
+```
+PUT /api/v1/manager/leaves/{id}/approve
+```
+
+**Request Body:**
+```json
+{
+    "notes": "Approved. Take care and get well soon."
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "status": "approved",
+        "approved_by": 5,
+        "approved_at": "2024-01-15T11:00:00.000000Z",
+        "notes": "Approved. Take care and get well soon."
+    },
+    "message": "Leave request approved"
+}
+```
+
+#### 3.6.3: Reject Leave
+
+**API Endpoint:**
+```
+PUT /api/v1/manager/leaves/{id}/reject
+```
+
+**Request Body:**
+```json
+{
+    "notes": "We have a critical deadline during this period. Can you reschedule?"
+}
+```
+
+---
+
+### Feature 3.7: View Activity Logs
+
+**User Story:**
+> As a manager, I want to view all user activities (logins, check-ins, edits, etc.) for audit and security purposes.
+
+**Business Logic:**
+- Records all important actions: login, logout, check-in, check-out, task updates, data edits
+- Includes user info, timestamp, IP address, user agent
+- Searchable and filterable by user, action type, date range
+
+**API Endpoint:**
+```
+GET /api/v1/manager/activity-logs?user_id=1&action=check_in&start_date=2024-01-01
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "logs": [
+            {
+                "id": 1,
+                "user": {
+                    "id": 1,
+                    "name": "John Doe"
+                },
+                "action": "check_in",
+                "description": "User checked in with 3 tasks",
+                "ip_address": "192.168.1.100",
+                "user_agent": "Mozilla/5.0...",
+                "created_at": "2024-01-15T09:00:00.000000Z"
+            },
+            {
+                "id": 2,
+                "user": {
+                    "id": 1,
+                    "name": "John Doe"
+                },
+                "action": "check_out",
+                "description": "User checked out. Total hours: 7.5",
+                "ip_address": "192.168.1.100",
+                "user_agent": "Mozilla/5.0...",
+                "created_at": "2024-01-15T16:30:00.000000Z"
+            },
+            {
+                "id": 3,
+                "user": {
+                    "id": 5,
+                    "name": "Manager Admin"
+                },
+                "action": "attendance_edited",
+                "description": "Edited attendance #123 for John Doe. Reason: Employee forgot to check out",
+                "ip_address": "192.168.1.50",
+                "user_agent": "Mozilla/5.0...",
+                "created_at": "2024-01-15T18:00:00.000000Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "total_pages": 10,
+            "per_page": 50,
+            "total": 500
+        }
+    }
+}
+```
+
+---
+
+## 4. System Features
+
+### Feature 4.1: Auto Checkout at 23:59
+
+**Business Logic:**
+- Laravel Scheduler runs daily at 23:59
+- Finds all active attendances (check_in exists, check_out is null) for current date
+- Auto-fills check_out with 23:59:59 timestamp
+- Calculates total_hours
+- Creates activity log entry for each auto checkout
+- Sends notification/email to affected employees
+
+**Implementation:**
 ```php
 // app/Console/Commands/AutoCheckoutCommand.php
-// Scheduled in app/Console/Kernel.php at 23:59 daily
+php artisan attendance:auto-checkout
+
+// Scheduled in app/Console/Kernel.php
+$schedule->command('attendance:auto-checkout')->dailyAt('23:59');
 ```
 
-**Acceptance Criteria**:
-- ✅ Command berjalan setiap hari jam 23:59
-- ✅ Semua sesi check-in aktif di-close otomatis
-- ✅ Status berubah menjadi "auto_checked_out"
-- ✅ Auto check-out dicatat di activity log
-- ✅ Email notification ke karyawan (optional)
+**Activity Log Entry:**
+```json
+{
+    "user_id": 1,
+    "action": "auto_checkout",
+    "description": "System automatically checked out user at 23:59:59",
+    "created_at": "2024-01-15T23:59:59.000000Z"
+}
+```
 
 ---
 
-## Feature 4: Employee - Personal Report
+### Feature 4.2: Work Hours Calculation
 
-### F4.1 - Daily Work Hours Summary
-**User Story**: Sebagai karyawan, saya ingin melihat rekap jam kerja saya setiap hari.
+**Business Logic:**
+- Required hours per day: **7 hours**
+- Total hours = Sum of all session hours for the day
+- Installment system: Employee can work multiple sessions per day
+- Example: 
+  - Session 1: 9:00 AM - 12:00 PM = 3 hours
+  - Session 2: 2:00 PM - 6:00 PM = 4 hours
+  - **Total: 7 hours (complete)**
 
-**Requirements**:
-- Page "Rekap Saya" di menu employee
-- Filter berdasarkan tanggal (date picker)
-- Tampilkan untuk tanggal yang dipilih:
-  - Total jam kerja hari itu
-  - Status: Belum tercapai (<7 jam) / Tercapai (=7 jam) / Overtime (>7 jam)
-  - List semua sesi check-in/check-out
-  - Detail task per sesi dengan status completion
-- Default tampilkan data hari ini
+**Status Definitions:**
+- **Complete**: Total daily hours ≥ 7.0
+- **Incomplete**: Total daily hours < 7.0
+- **Overtime**: Total daily hours > 7.0 (excess hours tracked separately)
 
-**Display Format**:
+**Calculation Example:**
+```php
+// Session 1: 4 hours
+// Session 2: 3.5 hours
+// Total: 7.5 hours
+// Status: Complete + 0.5 overtime
 ```
-Tanggal: 31 Oktober 2024
-
-Total Jam Kerja: 8.5 jam
-Status: Overtime (+1.5 jam)
-Target: 7 jam
-
-Sesi 1: 09:00 - 13:00 (4 jam)
-✓ Fix bug authentication
-✓ Code review PR #123
-✗ Unit testing [Blocker: Waiting for QA environment]
-
-Sesi 2: 14:00 - 18:30 (4.5 jam)
-✓ Update documentation
-✓ Meeting with client
-```
-
-**Acceptance Criteria**:
-- ✅ Karyawan bisa lihat rekap per tanggal
-- ✅ Total jam kerja dihitung dengan benar
-- ✅ Status jam kerja ditampilkan dengan jelas
-- ✅ Detail sesi dan task terlihat lengkap
-- ✅ Blocker reason terlihat untuk task incomplete
-
-### F4.2 - Monthly Work Hours Report
-**User Story**: Sebagai karyawan, saya ingin melihat rekap bulanan jam kerja saya.
-
-**Requirements**:
-- Filter berdasarkan bulan & tahun
-- Tampilkan:
-  - Total hari kerja dalam bulan (exclude weekend & holiday)
-  - Total jam kerja bulan ini
-  - Rata-rata jam kerja per hari
-  - Jumlah hari yang tidak mencapai 7 jam
-  - Total overtime hours
-  - Calendar view dengan color coding:
-    - Hijau: ≥ 7 jam
-    - Kuning: 4-6.99 jam
-    - Merah: < 4 jam
-    - Abu-abu: Hari libur/weekend/cuti
-
-**Acceptance Criteria**:
-- ✅ Rekap bulanan akurat
-- ✅ Calendar view mudah dibaca
-- ✅ Statistik ditampilkan dengan jelas
-- ✅ Karyawan bisa klik tanggal di calendar untuk lihat detail
 
 ---
 
-## Feature 5: Manager - Dashboard & Overview
+### Feature 4.3: Dashboard Statistics
 
-### F5.1 - Manager Dashboard
-**User Story**: Sebagai manager, saya ingin melihat overview real-time dari semua karyawan di dashboard.
+**Business Logic:**
+Calculate and display various statistics for both employees and managers.
 
-**Requirements**:
-- Card summary:
-  - Total karyawan aktif
-  - Karyawan yang sedang check-in (real-time)
-  - Karyawan yang sudah mencapai 7 jam hari ini
-  - Rata-rata jam kerja tim hari ini
-- Tabel karyawan hari ini dengan kolom:
-  - Nama
-  - Status (Check-in / Check-out / Tidak check-in)
-  - Check-in time
-  - Check-out time (jika ada)
-  - Total jam hari ini
-  - Status target (Belum / Tercapai / Overtime)
-- Filter: Semua / Check-in / Check-out / Belum check-in
-- Search by nama karyawan
-
-**Acceptance Criteria**:
-- ✅ Data real-time atau max delay 1 menit
-- ✅ Manager bisa filter dan search karyawan
-- ✅ Klik nama karyawan untuk lihat detail
-- ✅ Summary cards akurat
-
-### F5.2 - Employee Detail Report
-**User Story**: Sebagai manager, saya ingin melihat detail attendance dan task dari karyawan tertentu.
-
-**Requirements**:
-- Page detail karyawan dengan filter tanggal
-- Tampilkan informasi:
-  - Profil karyawan (nama, email, role)
-  - Total jam kerja (hari ini / periode tertentu)
-  - List attendance sessions dengan detail task
-  - Chart jam kerja (line chart per hari)
-- Action buttons:
-  - Edit attendance
-  - Delete attendance
-  - Export to PDF
-
-**Acceptance Criteria**:
-- ✅ Manager bisa lihat detail lengkap
-- ✅ Filter tanggal berfungsi
-- ✅ Chart tampil dengan benar
-- ✅ Action buttons berfungsi sesuai permission
-
----
-
-## Feature 6: Manager - Attendance Management
-
-### F6.1 - Edit Attendance
-**User Story**: Sebagai manager, saya ingin mengedit data attendance karyawan jika ada kesalahan.
-
-**Requirements**:
-- Manager bisa edit:
-  - Check-in time
-  - Check-out time
-  - Task descriptions
-  - Task completion status
-  - Blocker reasons
-- Validasi: check-out harus > check-in
-- Auto recalculate duration setelah edit
-- Wajib isi alasan edit (untuk audit trail)
-
-**Validation Rules**:
-```
-check_in_at: required, date
-check_out_at: nullable, date, after:check_in_at
-edit_reason: required, string, max:500
-```
-
-**Acceptance Criteria**:
-- ✅ Manager bisa edit attendance
-- ✅ Duration ter-recalculate otomatis
-- ✅ Edit reason wajib diisi
-- ✅ Edit dicatat di activity log dengan detail perubahan
-
-### F6.2 - Delete Attendance
-**User Story**: Sebagai manager, saya ingin menghapus data attendance yang salah atau duplikat.
-
-**Requirements**:
-- Confirmation modal sebelum delete
-- Soft delete (data tidak benar-benar dihapus)
-- Wajib isi alasan hapus
-- Delete cascade ke tasks terkait
-
-**Acceptance Criteria**:
-- ✅ Confirmation modal muncul
-- ✅ Data ter-soft delete
-- ✅ Delete reason wajib diisi
-- ✅ Delete dicatat di activity log
-- ✅ Task terkait ikut terhapus
-
----
-
-## Feature 7: Manager - User Management
-
-### F7.1 - View All Users
-**User Story**: Sebagai manager, saya ingin melihat list semua karyawan.
-
-**Requirements**:
-- Tabel users dengan kolom:
-  - ID
-  - Nama
-  - Email
-  - Role
-  - Status (Aktif/Nonaktif)
-  - Tanggal bergabung
-  - Actions (Edit, Delete, Reset Password)
-- Search by nama atau email
-- Filter by role dan status
-- Pagination (25 per page)
-
-**Acceptance Criteria**:
-- ✅ List users tampil lengkap
-- ✅ Search dan filter berfungsi
-- ✅ Pagination berfungsi
-
-### F7.2 - Create User
-**User Story**: Sebagai manager, saya ingin menambahkan karyawan baru ke sistem.
-
-**Requirements**:
-- Form create user:
-  - Nama lengkap
-  - Email (unique)
-  - Password (auto-generate atau manual)
-  - Role (Employee / Manager)
-  - Status (Aktif/Nonaktif)
-- Email notifikasi ke user baru dengan credentials
-
-**Validation Rules**:
-```
-name: required, string, max:100
-email: required, email, unique:users,email
-password: required, min:8, confirmed
-role: required, in:employee,manager
-```
-
-**Acceptance Criteria**:
-- ✅ Manager bisa create user baru
-- ✅ Email tidak boleh duplikat
-- ✅ Password di-hash dengan bcrypt
-- ✅ Email notifikasi terkirim
-- ✅ Create dicatat di activity log
-
-### F7.3 - Edit User
-**User Story**: Sebagai manager, saya ingin mengedit data karyawan.
-
-**Requirements**:
-- Edit: nama, email, role, status
-- Password tidak bisa diedit (gunakan reset password)
-- Validasi email unique (exclude user yang sedang diedit)
-
-**Acceptance Criteria**:
-- ✅ Manager bisa edit user data
-- ✅ Email validation correct
-- ✅ Edit dicatat di activity log
-
-### F7.4 - Delete User
-**User Story**: Sebagai manager, saya ingin menghapus karyawan yang sudah resign.
-
-**Requirements**:
-- Soft delete user
-- Confirmation modal
-- History attendance tetap tersimpan untuk keperluan audit
-- User yang di-delete tidak bisa login
-
-**Acceptance Criteria**:
-- ✅ User ter-soft delete
-- ✅ History attendance tetap ada
-- ✅ User tidak bisa login lagi
-- ✅ Delete dicatat di activity log
-
-### F7.5 - Reset Password
-**User Story**: Sebagai manager, saya ingin reset password karyawan yang lupa.
-
-**Requirements**:
-- Auto-generate password baru (random 12 karakter)
-- Email password baru ke user
-- User wajib ganti password saat first login
-
-**Acceptance Criteria**:
-- ✅ Password ter-reset
-- ✅ Email terkirim dengan password baru
-- ✅ Reset dicatat di activity log
-
----
-
-## Feature 8: Manager - Holiday Management
-
-### F8.1 - Holiday CRUD
-**User Story**: Sebagai manager, saya ingin mengatur hari libur nasional dan perusahaan.
-
-**Requirements**:
-- List holidays dengan tanggal dan nama
-- Create holiday (nama, tanggal)
-- Edit holiday
-- Delete holiday
-- Import holidays (bulk via CSV)
-
-**Validation Rules**:
-```
-name: required, string, max:100
-date: required, date, unique:holidays,date
-```
-
-**Impact**:
-- Hari libur tidak dihitung dalam target jam kerja
-- Karyawan tidak perlu check-in di hari libur
-- Calendar view karyawan tampilkan hari libur
-
-**Acceptance Criteria**:
-- ✅ CRUD holiday berfungsi
-- ✅ Import CSV berfungsi
-- ✅ Hari libur ter-apply ke semua karyawan
-- ✅ Changes dicatat di activity log
-
----
-
-## Feature 9: Manager - Leave Management
-
-### F9.1 - Leave CRUD
-**User Story**: Sebagai manager, saya ingin mengatur cuti karyawan.
-
-**Requirements**:
-- List leaves dengan kolom:
-  - Karyawan
-  - Tanggal mulai
-  - Tanggal selesai
-  - Jumlah hari
-  - Alasan
-  - Status (Pending/Approved/Rejected)
-- Create leave untuk karyawan
-- Approve/reject leave
-- Delete leave
-
-**Validation Rules**:
-```
-user_id: required, exists:users,id
-start_date: required, date
-end_date: required, date, after_or_equal:start_date
-reason: required, string, max:500
-```
-
-**Impact**:
-- Hari cuti tidak dihitung dalam target jam kerja
-- Karyawan tidak perlu check-in di hari cuti
-- Calendar view karyawan tampilkan hari cuti
-
-**Acceptance Criteria**:
-- ✅ Manager bisa manage leave
-- ✅ Date range validation correct
-- ✅ Hari cuti ter-apply ke karyawan
-- ✅ Changes dicatat di activity log
-
-### F9.2 - Leave Request (Optional Enhancement)
-**User Story**: Sebagai karyawan, saya ingin mengajukan cuti melalui aplikasi.
-
-**Requirements**:
-- Karyawan bisa submit leave request
-- Manager dapat notifikasi untuk approve/reject
-- Email notifikasi ke karyawan saat approved/rejected
-
----
-
-## Feature 10: Manager - Activity Log
-
-### F10.1 - View Activity Logs
-**User Story**: Sebagai manager, saya ingin melihat semua aktivitas user untuk audit trail.
-
-**Requirements**:
-- Tabel activity logs dengan kolom:
-  - Timestamp
-  - User (nama)
-  - Activity type (Check-in, Check-out, Edit, Delete, etc)
-  - Description
-  - IP Address
-  - User Agent
-- Filter by:
-  - User
-  - Activity type
-  - Date range
-- Search by description
-- Export to CSV/Excel
-- Pagination (50 per page)
-
-**Activity Types to Log**:
-- `CHECK_IN`: Karyawan check-in
-- `CHECK_OUT`: Karyawan check-out
-- `AUTO_CHECK_OUT`: System auto check-out
-- `ATTENDANCE_EDIT`: Manager edit attendance
-- `ATTENDANCE_DELETE`: Manager delete attendance
-- `TASK_UPDATE`: Update task status
-- `USER_CREATE`: Manager create user
-- `USER_EDIT`: Manager edit user
-- `USER_DELETE`: Manager delete user
-- `HOLIDAY_CREATE`: Manager create holiday
-- `HOLIDAY_DELETE`: Manager delete holiday
-- `LEAVE_CREATE`: Manager create leave
-- `LEAVE_APPROVE`: Manager approve leave
-- `LOGIN`: User login
-- `LOGOUT`: User logout
-
-**Acceptance Criteria**:
-- ✅ Semua aktivitas tercatat
-- ✅ Filter dan search berfungsi
-- ✅ Export berfungsi
-- ✅ Log tidak bisa diedit/dihapus
-
----
-
-## Feature 11: Reports & Analytics (Future Enhancement)
-
-### F11.1 - Team Performance Report
-- Average work hours per team/department
-- Top performers (most consistent)
-- Employees not meeting targets
-- Overtime analysis
-
-### F11.2 - Task Analysis
-- Most common blockers
+#### Employee Dashboard Stats:
+- Today's hours worked
+- This week's total hours
+- This month's total hours
 - Task completion rate
-- Average tasks per day
+- Days with incomplete hours this month
 
-### F11.3 - Export Reports
-- PDF export untuk individual employee
-- Excel export untuk bulk data
-- Monthly/yearly reports
-
----
-
-## Business Rules Summary
-
-### Work Hours Calculation
-1. **Daily Target**: 7 jam (420 menit)
-2. **Overtime**: Jam kerja > 7 jam dalam 1 hari
-3. **Multiple Sessions**: Bisa check-in/out berkali-kali, total dihitung kumulatif
-4. **No Buffer**: 6.99 jam tetap belum mencapai target
-
-### Check-In Rules
-1. Tidak bisa check-in jika ada sesi aktif
-2. Minimal 1 task harus diinput
-3. Maksimal 10 tasks per sesi
-4. Bisa check-in multiple kali per hari
-
-### Check-Out Rules
-1. Hanya bisa check-out jika ada sesi aktif
-2. Semua task harus di-checklist (complete/incomplete)
-3. Task incomplete wajib isi blocker reason
-4. Auto check-out jam 23:59 jika lupa check-out
-
-### Holidays & Leaves
-1. Hari libur = tidak ada target jam kerja
-2. Hari cuti = tidak ada target jam kerja
-3. Weekend handling (opsional, tergantung kebijakan)
-
-### Authorization
-1. **Employee**: Hanya akses data sendiri
-2. **Manager**: Akses semua data, bisa edit/delete
-
-### Activity Logging
-1. Semua CRUD operations dicatat
-2. Login/logout dicatat
-3. Check-in/out dicatat
-4. Log include: user, timestamp, IP, user agent
-5. Log tidak bisa diedit/dihapus
+#### Manager Dashboard Stats:
+- Total employees
+- Employees currently checked in
+- Average daily hours (team)
+- Total overtime hours (team)
+- Employees with most incomplete days
+- Team task completion rate
 
 ---
 
-## API Endpoints Reference
+## 5. API Endpoints Reference
 
-### Authentication
-- `POST /login` - Login
-- `POST /logout` - Logout
+### Authentication Endpoints
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/auth/login` | User login | No |
+| POST | `/api/v1/auth/logout` | User logout | Yes |
 
-### Employee Routes
-- `GET /employee/dashboard` - Dashboard karyawan
-- `POST /employee/check-in` - Check-in
-- `POST /employee/check-out` - Check-out
-- `GET /employee/report` - Rekap pribadi
-- `GET /employee/report/daily?date={date}` - Rekap harian
-- `GET /employee/report/monthly?month={month}&year={year}` - Rekap bulanan
+### Attendance Endpoints (Employee)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| POST | `/api/v1/attendance/check-in` | Check in with tasks | Yes | Employee |
+| POST | `/api/v1/attendance/check-out` | Check out with task status | Yes | Employee |
+| GET | `/api/v1/attendance/today` | Get today's status | Yes | Employee |
+| GET | `/api/v1/attendances/my-history` | Get personal attendance history | Yes | Employee |
 
-### Manager Routes
-- `GET /manager/dashboard` - Dashboard manager
-- `GET /manager/employees` - List karyawan dengan attendance hari ini
-- `GET /manager/employees/{id}` - Detail karyawan
-- `GET /manager/attendances` - List all attendances
-- `PUT /manager/attendances/{id}` - Edit attendance
-- `DELETE /manager/attendances/{id}` - Delete attendance
+### Task Endpoints (Employee)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| POST | `/api/v1/tasks/add` | Add tasks to current session | Yes | Employee |
+| GET | `/api/v1/tasks/incomplete` | Get all incomplete tasks | Yes | Employee |
 
-### User Management (Manager Only)
-- `GET /manager/users` - List users
-- `POST /manager/users` - Create user
-- `PUT /manager/users/{id}` - Edit user
-- `DELETE /manager/users/{id}` - Delete user
-- `POST /manager/users/{id}/reset-password` - Reset password
+### Report Endpoints (Employee)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/reports/my-report` | Get personal work report | Yes | Employee |
 
-### Holiday Management (Manager Only)
-- `GET /manager/holidays` - List holidays
-- `POST /manager/holidays` - Create holiday
-- `PUT /manager/holidays/{id}` - Edit holiday
-- `DELETE /manager/holidays/{id}` - Delete holiday
+### Leave Endpoints (Employee)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| POST | `/api/v1/leaves` | Request leave | Yes | Employee |
+| GET | `/api/v1/leaves/my-requests` | Get own leave requests | Yes | Employee |
 
-### Leave Management (Manager Only)
-- `GET /manager/leaves` - List leaves
-- `POST /manager/leaves` - Create leave
-- `PUT /manager/leaves/{id}` - Edit leave
-- `DELETE /manager/leaves/{id}` - Delete leave
-- `POST /manager/leaves/{id}/approve` - Approve leave
-- `POST /manager/leaves/{id}/reject` - Reject leave
+### Manager Endpoints
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/manager/dashboard` | Manager dashboard overview | Yes | Manager |
+| GET | `/api/v1/manager/reports/employee/{id}` | Get employee report | Yes | Manager |
+| GET | `/api/v1/manager/attendances` | Get all attendances | Yes | Manager |
+| PUT | `/api/v1/manager/attendances/{id}` | Edit attendance | Yes | Manager |
+| DELETE | `/api/v1/manager/attendances/{id}` | Delete attendance | Yes | Manager |
 
-### Activity Logs (Manager Only)
-- `GET /manager/activity-logs` - List activity logs
-- `GET /manager/activity-logs/export` - Export to CSV
+### User Management Endpoints (Manager)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/manager/users` | List all users | Yes | Manager |
+| POST | `/api/v1/manager/users` | Create user | Yes | Manager |
+| PUT | `/api/v1/manager/users/{id}` | Update user | Yes | Manager |
+| DELETE | `/api/v1/manager/users/{id}` | Delete user | Yes | Manager |
 
----
+### Holiday Management Endpoints (Manager)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/holidays` | List holidays | Yes | Both |
+| POST | `/api/v1/manager/holidays` | Create holiday | Yes | Manager |
+| PUT | `/api/v1/manager/holidays/{id}` | Update holiday | Yes | Manager |
+| DELETE | `/api/v1/manager/holidays/{id}` | Delete holiday | Yes | Manager |
 
-## Database Schema Summary
+### Leave Management Endpoints (Manager)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/manager/leaves` | List all leave requests | Yes | Manager |
+| PUT | `/api/v1/manager/leaves/{id}/approve` | Approve leave | Yes | Manager |
+| PUT | `/api/v1/manager/leaves/{id}/reject` | Reject leave | Yes | Manager |
 
-### users
-```sql
-id, name, email, password, role (enum: manager, employee), 
-status (enum: active, inactive), remember_token, 
-created_at, updated_at, deleted_at
-```
-
-### attendances
-```sql
-id, user_id, check_in_at, check_out_at (nullable),
-status (enum: checked_in, checked_out, auto_checked_out),
-duration_minutes (default 0), is_overtime (default false),
-created_at, updated_at, deleted_at
-```
-
-### tasks
-```sql
-id, attendance_id, description, is_completed (default false),
-blocker_reason (nullable), created_at, updated_at
-```
-
-### holidays
-```sql
-id, name, date (unique), created_at, updated_at
-```
-
-### leaves
-```sql
-id, user_id, start_date, end_date, reason,
-status (enum: pending, approved, rejected),
-approved_by (user_id, nullable), approved_at (nullable),
-created_at, updated_at
-```
-
-### activity_logs
-```sql
-id, user_id, activity_type (enum), description,
-ip_address, user_agent, created_at
-```
+### Activity Log Endpoints (Manager)
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/manager/activity-logs` | View activity logs | Yes | Manager |
 
 ---
 
-## UI/UX Guidelines
+## 6. Business Rules Summary
 
-### Color Coding
-- **Green**: Success, target tercapai, completed tasks
-- **Yellow**: Warning, mendekati target (4-6.99 jam)
-- **Red**: Danger, target tidak tercapai (< 4 jam)
-- **Blue**: Info, overtime
-- **Gray**: Inactive, holidays, weekends
+### Work Hours Rules
+1. **Required daily hours**: 7 hours
+2. **Installment allowed**: Yes (multiple check-in/out per day)
+3. **Overtime tracking**: Yes (hours > 7 recorded)
+4. **No buffer/tolerance**: Exactly 7 hours required
+5. **Auto checkout**: 23:59 daily
 
-### Notifications
-- Success toast untuk actions yang berhasil
-- Error toast untuk validation errors
-- Confirmation modal untuk destructive actions (delete)
-- Real-time notification untuk manager (optional, using websocket)
+### Task Management Rules
+1. **Minimum tasks per check-in**: 1 task
+2. **Maximum tasks per check-in**: 20 tasks
+3. **Tasks can be added**: During active session
+4. **Blocker reason required**: When task incomplete at checkout
+5. **Task cannot be deleted**: Only marked complete/incomplete
 
-### Responsive Design
-- Mobile-friendly untuk karyawan check-in/out
-- Desktop-optimized untuk manager dashboard & reports
-- Tablet support untuk semua features
+### Leave Rules
+1. **Leave request**: Must be submitted before leave date
+2. **Manager approval**: Required for all leaves
+3. **Check-in during leave**: Blocked by system
+4. **Leave dates**: Don't count toward required work hours
+
+### Holiday Rules
+1. **Set by manager**: Only managers can add/edit holidays
+2. **Check-in blocked**: System prevents check-in on holidays
+3. **Doesn't count toward**: Required work hours
+
+### Authorization Rules
+1. **Employee can**:
+   - Check-in/out for themselves only
+   - View their own reports
+   - Request leave
+   - Add tasks to their sessions
+
+2. **Manager can**:
+   - View all employee data
+   - Edit/delete any attendance
+   - Manage users (CRUD)
+   - Manage holidays
+   - Approve/reject leaves
+   - View activity logs
+   - Cannot check-in/out (unless also employee role)
 
 ---
 
-## Performance Targets
-- Page load time: < 2 detik
-- Check-in/out process: < 1 detik
-- Dashboard load: < 3 detik dengan 100+ karyawan
-- Report generation: < 5 detik untuk 1 tahun data
+## 7. Edge Cases & Special Scenarios
 
-## Security Requirements
-- HTTPS only
-- CSRF protection
-- SQL injection prevention
-- XSS prevention
-- Rate limiting untuk login attempts
-- Session timeout (30 menit idle)
-- Password hashing dengan bcrypt (cost 12)
+### Scenario 1: Employee forgets to check out
+- **Solution**: Auto-checkout at 23:59
+- **Activity logged**: Yes
+- **Notification sent**: Optional (email/notification)
+
+### Scenario 2: Employee works less than 7 hours
+- **Status**: Marked as "incomplete"
+- **Manager notification**: Optional
+- **Carried over**: No (each day independent)
+
+### Scenario 3: Employee works on holiday
+- **Prevented**: System blocks check-in with message
+- **Override**: Manager can manually add attendance if needed
+
+### Scenario 4: Multiple check-ins same day
+- **Allowed**: Yes (installment system)
+- **New tasks**: Can choose new or continue from previous session
+- **Total calculation**: Sum of all sessions for the day
+
+### Scenario 5: Manager edits attendance
+- **Activity logged**: Yes (who, when, reason)
+- **Notification**: Employee notified of change
+- **Audit trail**: Full history preserved
+
+### Scenario 6: Internet connection lost during check-in
+- **Frontend handling**: Show error, allow retry
+- **Backend**: Transaction rollback if incomplete
+- **Data integrity**: No partial records
+
+### Scenario 7: Employee on approved leave checks in
+- **Blocked**: System prevents check-in
+- **Message**: "You are currently on approved leave"
+
+---
+
+This completes the comprehensive feature documentation for the WFH Attendance & Task Tracking System.
