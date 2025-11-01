@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Http\Controllers\Api\Auth;
+
+use App\Enums\ActivityType;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Repositories\UserRepository;
+use App\Services\ActivityLogService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+
+class LoginController extends Controller
+{
+    public function __construct(
+        private UserRepository $userRepository,
+        private ActivityLogService $activityLogService
+    ) {}
+
+    public function login(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+            'password' => 'required|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            if (Auth::attempt($request->only('email', 'password'))) {
+                $user = Auth::user();
+                $token = $user->createToken('auth-token')->plainTextToken;
+
+                $this->activityLogService->logActivity(
+                    $user,
+                    ActivityType::LOGIN,
+                    "User logged in",
+                    $request
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'user' => new UserResource($user),
+                        'token' => $token,
+                    ],
+                    'message' => 'Login successful',
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials',
+            ], 401);
+        } catch (\Exception $e) {
+            Log::error('Login failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to login. Please try again.',
+            ], 500);
+        }
+    }
+}

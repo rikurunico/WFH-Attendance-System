@@ -1,0 +1,137 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Enums\ActivityType;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\AttendanceEditRequest;
+use App\Http\Resources\AttendanceResource;
+use App\Repositories\AttendanceRepository;
+use App\Services\ActivityLogService;
+use App\Services\AttendanceService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class ManagerAttendanceController extends Controller
+{
+    public function __construct(
+        private AttendanceRepository $attendanceRepository,
+        private AttendanceService $attendanceService,
+        private ActivityLogService $activityLogService
+    ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
+            $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
+
+            $attendances = $this->attendanceRepository->getAllInDateRange($startDate, $endDate);
+
+            return response()->json([
+                'success' => true,
+                'data' => AttendanceResource::collection($attendances),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Get attendances failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get attendances',
+            ], 500);
+        }
+    }
+
+    public function update(AttendanceEditRequest $request, int $id): JsonResponse
+    {
+        try {
+            $attendance = $this->attendanceRepository->findById($id);
+
+            if (!$attendance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance not found',
+                ], 404);
+            }
+
+            $validated = $request->validated();
+            $checkIn = Carbon::parse($validated['check_in']);
+            $checkOut = $validated['check_out'] ? Carbon::parse($validated['check_out']) : null;
+
+            $totalHours = $checkOut ? $this->attendanceService->calculateTotalHours($checkIn, $checkOut) : 0;
+
+            $this->attendanceRepository->update($attendance, [
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'total_hours' => $totalHours,
+            ]);
+
+            $manager = auth()->user();
+            $this->activityLogService->logActivity(
+                $manager,
+                ActivityType::ATTENDANCE_EDITED,
+                "Edited attendance #{$id} for {$attendance->user->name}. Reason: {$validated['reason']}",
+                $request
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => new AttendanceResource($attendance->fresh(['user', 'tasks'])),
+                'message' => 'Attendance updated successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Update attendance failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update attendance',
+            ], 500);
+        }
+    }
+
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        try {
+            $attendance = $this->attendanceRepository->findById($id);
+
+            if (!$attendance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance not found',
+                ], 404);
+            }
+
+            $reason = $request->input('reason');
+            if (!$reason || strlen($reason) < 10) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reason is required (minimum 10 characters)',
+                ], 422);
+            }
+
+            $manager = auth()->user();
+            $this->activityLogService->logActivity(
+                $manager,
+                ActivityType::ATTENDANCE_DELETED,
+                "Deleted attendance #{$id} for {$attendance->user->name}. Reason: {$reason}",
+                $request
+            );
+
+            $this->attendanceRepository->delete($attendance);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Delete attendance failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete attendance',
+            ], 500);
+        }
+    }
+}

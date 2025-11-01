@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Models\Attendance;
+use App\Models\Task;
+use Illuminate\Database\Eloquent\Collection;
+
+class TaskRepository
+{
+    /**
+     * Create tasks for attendance.
+     */
+    public function createMany(Attendance $attendance, array $tasksData): Collection
+    {
+        $taskIds = [];
+
+        foreach ($tasksData as $taskData) {
+            $task = Task::create([
+                'attendance_id' => $attendance->id,
+                'title' => $taskData['title'],
+                'is_completed' => false,
+                'blocker_reason' => null,
+            ]);
+            $taskIds[] = $task->id;
+        }
+
+        // Return as Eloquent Collection
+        return Task::whereIn('id', $taskIds)->get();
+    }
+
+    /**
+     * Update task status.
+     */
+    public function updateStatus(Task $task, bool $isCompleted, ?string $blockerReason = null): bool
+    {
+        return $task->update([
+            'is_completed' => $isCompleted,
+            'blocker_reason' => $blockerReason,
+        ]);
+    }
+
+    /**
+     * Update multiple tasks status.
+     */
+    public function updateMultipleStatuses(array $tasksData): void
+    {
+        foreach ($tasksData as $taskData) {
+            $task = Task::findOrFail($taskData['id']);
+            $this->updateStatus(
+                $task,
+                $taskData['is_completed'],
+                $taskData['blocker_reason'] ?? null
+            );
+        }
+    }
+
+    /**
+     * Get incomplete tasks for user.
+     */
+    public function getIncompleteTasksForUser(int $userId): Collection
+    {
+        return Task::whereHas('attendance', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
+            ->where('is_completed', false)
+            ->with('attendance')
+            ->get();
+    }
+
+    /**
+     * Get tasks by attendance.
+     */
+    public function getByAttendance(Attendance $attendance): Collection
+    {
+        return Task::where('attendance_id', $attendance->id)->get();
+    }
+}
+

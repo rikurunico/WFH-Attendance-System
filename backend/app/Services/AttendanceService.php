@@ -1,0 +1,206 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\ActivityType;
+use App\Models\Attendance;
+use App\Models\Holiday;
+use App\Models\Leave;
+use App\Models\User;
+use App\Repositories\AttendanceRepository;
+use App\Repositories\TaskRepository;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class AttendanceService
+{
+    public function __construct(
+        private AttendanceRepository $attendanceRepository,
+        private TaskRepository $taskRepository,
+        private ActivityLogService $activityLogService
+    ) {}
+
+    /**
+     * Check in employee with tasks.
+     */
+    public function checkIn(User $user, array $tasks, ?Request $request = null): Attendance
+    {
+        // Validate no active check-in
+        $activeAttendance = $this->attendanceRepository->findActiveByUser($user);
+        if ($activeAttendance) {
+            throw new \Exception('You have already checked in. Please check out first.');
+        }
+
+        // Check if today is a holiday
+        $today = Carbon::today();
+        $holiday = Holiday::whereDate('date', $today)->first();
+        if ($holiday) {
+            throw new \Exception("Today is a holiday: {$holiday->name}. You cannot check in.");
+        }
+
+        // Check if user is on approved leave
+        $approvedLeave = Leave::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->first();
+
+        if ($approvedLeave) {
+            throw new \Exception('You are currently on approved leave. You cannot check in.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $checkInTime = Carbon::now();
+
+            $attendance = $this->attendanceRepository->create([
+                'user_id' => $user->id,
+                'check_in' => $checkInTime,
+                'check_out' => null,
+                'date' => $checkInTime->toDateString(),
+                'total_hours' => 0,
+            ]);
+
+            $this->taskRepository->createMany($attendance, $tasks);
+
+            $this->activityLogService->logActivity(
+                $user,
+                ActivityType::CHECK_IN,
+                "User checked in with " . count($tasks) . " tasks",
+                $request
+            );
+
+            DB::commit();
+            return $attendance->load('tasks');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Check-in failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Check out employee with task statuses.
+     */
+    public function checkOut(User $user, int $attendanceId, array $tasksData, ?Request $request = null): Attendance
+    {
+        $attendance = $this->attendanceRepository->findById($attendanceId);
+
+        if (!$attendance || $attendance->user_id !== $user->id) {
+            throw new \Exception('Attendance record not found or does not belong to you.');
+        }
+
+        if ($attendance->check_out) {
+            throw new \Exception('You have already checked out.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $checkOutTime = Carbon::now();
+            $totalHours = $this->calculateTotalHours($attendance->check_in, $checkOutTime);
+
+            $this->attendanceRepository->update($attendance, [
+                'check_out' => $checkOutTime,
+                'total_hours' => $totalHours,
+            ]);
+
+            $this->taskRepository->updateMultipleStatuses($tasksData);
+
+            $this->activityLogService->logActivity(
+                $user,
+                ActivityType::CHECK_OUT,
+                "User checked out. Total hours: {$totalHours}",
+                $request
+            );
+
+            DB::commit();
+            return $attendance->fresh(['tasks']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Check-out failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Calculate total working hours between check-in and check-out.
+     */
+    public function calculateTotalHours(Carbon $checkIn, Carbon $checkOut): float
+    {
+        $minutes = $checkIn->diffInMinutes($checkOut);
+        return round($minutes / 60, 2);
+    }
+
+    /**
+     * Get today's status for user.
+     */
+    public function getTodayStatus(User $user): array
+    {
+        $today = Carbon::today();
+        $activeAttendance = $this->attendanceRepository->findActiveByUser($user);
+        $todayAttendances = $this->attendanceRepository->getAllByUserAndDate($user, $today);
+
+        $todayTotalHours = $todayAttendances->sum('total_hours');
+
+        if ($activeAttendance) {
+            $elapsedHours = $this->calculateTotalHours($activeAttendance->check_in, Carbon::now());
+            $todayTotalHours += $elapsedHours;
+        }
+
+        $previousSessions = $todayAttendances
+            ->where('id', '!=', $activeAttendance?->id)
+            ->map(function ($attendance) {
+                return [
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'total_hours' => $attendance->total_hours,
+                ];
+            })
+            ->values();
+
+        return [
+            'date' => $today->toDateString(),
+            'is_checked_in' => $activeAttendance !== null,
+            'current_session' => $activeAttendance ? [
+                'id' => $activeAttendance->id,
+                'check_in' => $activeAttendance->check_in,
+                'elapsed_hours' => $this->calculateTotalHours($activeAttendance->check_in, Carbon::now()),
+            ] : null,
+            'today_total_hours' => $todayTotalHours,
+            'required_hours' => 7,
+            'remaining_hours' => max(0, 7 - $todayTotalHours),
+            'previous_sessions' => $previousSessions,
+        ];
+    }
+
+    /**
+     * Auto checkout for all active attendances.
+     */
+    public function autoCheckout(): void
+    {
+        $activeAttendances = $this->attendanceRepository->findActiveForToday();
+        $checkOutTime = Carbon::today()->endOfDay();
+
+        foreach ($activeAttendances as $attendance) {
+            try {
+                $totalHours = $this->calculateTotalHours($attendance->check_in, $checkOutTime);
+
+                $this->attendanceRepository->update($attendance, [
+                    'check_out' => $checkOutTime,
+                    'total_hours' => $totalHours,
+                ]);
+
+                $this->activityLogService->logActivitySimple(
+                    $attendance->user,
+                    ActivityType::AUTO_CHECKOUT,
+                    "System automatically checked out user at 23:59:59"
+                );
+            } catch (\Exception $e) {
+                Log::error("Auto checkout failed for attendance {$attendance->id}: " . $e->getMessage());
+            }
+        }
+    }
+}
+

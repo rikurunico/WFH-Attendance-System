@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Enums\ActivityType;
+use App\Models\ActivityLog;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+
+class ActivityLogRepository
+{
+    /**
+     * Create activity log.
+     */
+    public function create(User $user, ActivityType $action, string $description, ?string $ipAddress = null, ?string $userAgent = null): ActivityLog
+    {
+        return ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => $action,
+            'description' => $description,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'created_at' => Carbon::now(),
+        ]);
+    }
+
+    /**
+     * Get activity logs with filters.
+     */
+    public function getWithFilters(?int $userId = null, ?ActivityType $action = null, ?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 50): Collection
+    {
+        $query = ActivityLog::with('user');
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        if ($action) {
+            $query->where('action', $action);
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
+     * Get activity logs by user.
+     */
+    public function getByUser(User $user, int $limit = 50): Collection
+    {
+        return ActivityLog::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+}
+
