@@ -48,6 +48,14 @@ class ReportService
                     'total_hours' => $attendance->total_hours,
                     'tasks_completed' => $tasksCompleted,
                     'tasks_incomplete' => $tasksIncomplete,
+                    'tasks' => $attendance->tasks->map(function ($task) {
+                        return [
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'is_completed' => $task->is_completed,
+                            'blocker_reason' => $task->blocker_reason,
+                        ];
+                    })->values(),
                 ];
             })->values();
 

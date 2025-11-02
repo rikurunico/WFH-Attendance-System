@@ -5,7 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Loading } from '../../components/common/Loading';
 import { getMyReport } from '../../api/report.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
-import { Calendar, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, TrendingUp, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MyReport = () => {
@@ -13,6 +13,7 @@ export const MyReport = () => {
   const [report, setReport] = useState(null);
   const [startDate, setStartDate] = useState(getMonthStart());
   const [endDate, setEndDate] = useState(getMonthEnd());
+  const [expandedSessions, setExpandedSessions] = useState({});
 
   useEffect(() => {
     fetchReport();
@@ -36,6 +37,19 @@ export const MyReport = () => {
 
   const handleFilter = () => {
     fetchReport();
+  };
+
+  const toggleSessionExpand = (attendanceIndex, sessionIndex) => {
+    const key = `${attendanceIndex}-${sessionIndex}`;
+    setExpandedSessions(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const isSessionExpanded = (attendanceIndex, sessionIndex) => {
+    const key = `${attendanceIndex}-${sessionIndex}`;
+    return expandedSessions[key] || false;
   };
 
   if (loading) {
@@ -181,8 +195,8 @@ export const MyReport = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {attendances.map((attendance, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+              {attendances.map((attendance, attendanceIndex) => (
+                <div key={attendanceIndex} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="font-semibold text-gray-900">{formatDate(attendance.date)}</p>
@@ -203,33 +217,90 @@ export const MyReport = () => {
 
                   {/* Sessions */}
                   <div className="space-y-2">
-                    {attendance.sessions.map((session, sessionIndex) => (
-                      <div key={sessionIndex} className="bg-gray-50 rounded p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-medium text-gray-700">
-                            Session {sessionIndex + 1}
+                    {attendance.sessions.map((session, sessionIndex) => {
+                      const isExpanded = isSessionExpanded(attendanceIndex, sessionIndex);
+                      const hasCompletedTasks = session.tasks_completed > 0;
+                      const hasIncompleteTasks = session.tasks_incomplete > 0;
+
+                      return (
+                        <div key={sessionIndex} className="bg-gray-50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium text-gray-700">
+                              Session {sessionIndex + 1}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {formatHours(session.total_hours)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {formatTime(session.check_in)} - {formatTime(session.check_out)}
                           </p>
-                          <p className="text-sm text-gray-600">
-                            {formatHours(session.total_hours)}
-                          </p>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {formatTime(session.check_in)} - {formatTime(session.check_out)}
-                        </p>
-                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-600">
-                          <span className="flex items-center space-x-1">
-                            <CheckCircle size={14} className="text-green-600" />
-                            <span>{session.tasks_completed} completed</span>
-                          </span>
-                          {session.tasks_incomplete > 0 && (
-                            <span className="flex items-center space-x-1">
-                              <XCircle size={14} className="text-red-600" />
-                              <span>{session.tasks_incomplete} incomplete</span>
-                            </span>
+                          
+                          {/* Task Summary - Clickable */}
+                          <div className="flex items-center space-x-4 text-xs">
+                            {hasCompletedTasks && (
+                              <button
+                                onClick={() => toggleSessionExpand(attendanceIndex, sessionIndex)}
+                                className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors"
+                              >
+                                <CheckCircle size={14} />
+                                <span>{session.tasks_completed} completed</span>
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                            )}
+                            {hasIncompleteTasks && (
+                              <button
+                                onClick={() => toggleSessionExpand(attendanceIndex, sessionIndex)}
+                                className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                              >
+                                <XCircle size={14} />
+                                <span>{session.tasks_incomplete} incomplete</span>
+                                {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Expanded Task Details */}
+                          {isExpanded && session.tasks && session.tasks.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-medium text-gray-700 mb-2">Task Details:</p>
+                              <div className="space-y-2">
+                                {session.tasks.map((task, taskIndex) => (
+                                  <div
+                                    key={taskIndex}
+                                    className={`p-2 rounded text-xs ${
+                                      task.is_completed
+                                        ? 'bg-green-50 border border-green-200'
+                                        : 'bg-red-50 border border-red-200'
+                                    }`}
+                                  >
+                                    <div className="flex items-start space-x-2">
+                                      {task.is_completed ? (
+                                        <CheckCircle size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                      ) : (
+                                        <XCircle size={14} className="text-red-600 mt-0.5 flex-shrink-0" />
+                                      )}
+                                      <div className="flex-1">
+                                        <p className={`font-medium ${
+                                          task.is_completed ? 'text-green-800' : 'text-red-800'
+                                        }`}>
+                                          {task.title}
+                                        </p>
+                                        {!task.is_completed && task.blocker_reason && (
+                                          <p className="text-red-700 mt-1 text-xs">
+                                            <span className="font-medium">Blocker:</span> {task.blocker_reason}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
