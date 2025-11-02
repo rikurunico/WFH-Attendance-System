@@ -38,7 +38,12 @@ class ReportService
             $totalHours += $dailyTotalHours;
             $totalDaysWorked++;
 
-            $sessions = $dayAttendances->map(function ($attendance) {
+            // Sort attendances by check_in ascending so Session 1 is the earliest
+            $sortedDayAttendances = $dayAttendances->sortBy(function ($attendance) {
+                return $attendance->check_in;
+            })->values();
+
+            $sessions = $sortedDayAttendances->map(function ($attendance) {
                 $tasksCompleted = $attendance->tasks->where('is_completed', true)->count();
                 $tasksIncomplete = $attendance->tasks->where('is_completed', false)->count();
 
@@ -59,8 +64,8 @@ class ReportService
                 ];
             })->values();
 
-            // Count tasks
-            foreach ($dayAttendances as $attendance) {
+            // Count tasks (using sorted attendances for consistency)
+            foreach ($sortedDayAttendances as $attendance) {
                 $totalTasksCompleted += $attendance->tasks->where('is_completed', true)->count();
                 $totalTasksIncomplete += $attendance->tasks->where('is_completed', false)->count();
                 $totalTasks += $attendance->tasks->count();
