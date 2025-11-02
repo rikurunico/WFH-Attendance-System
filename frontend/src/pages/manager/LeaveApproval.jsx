@@ -178,23 +178,23 @@ export const LeaveApproval = () => {
                   )}
 
                   {leave.status === 'pending' && (
-                    <div className="flex items-center space-x-3">
-                      <Button
+                    <div className="flex items-center gap-3">
+                      <button
                         onClick={() => handleOpenModal(leave, 'approve')}
-                        variant="success"
-                        className="flex-1"
+                        className="flex-1 group relative flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 overflow-hidden"
                       >
-                        <CheckCircle size={18} className="mr-2" />
-                        Approve
-                      </Button>
-                      <Button
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
+                        <CheckCircle size={20} className="relative z-10" />
+                        <span className="relative z-10">Approve</span>
+                      </button>
+                      <button
                         onClick={() => handleOpenModal(leave, 'reject')}
-                        variant="danger"
-                        className="flex-1"
+                        className="flex-1 group relative flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-95 overflow-hidden"
                       >
-                        <XCircle size={18} className="mr-2" />
-                        Reject
-                      </Button>
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
+                        <XCircle size={20} className="relative z-10" />
+                        <span className="relative z-10">Reject</span>
+                      </button>
                     </div>
                   )}
                 </div>

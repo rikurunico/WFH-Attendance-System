@@ -3,6 +3,7 @@
 <div align="center">
 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-success)
+![Version](https://img.shields.io/badge/Version-1.1.0-blue)
 ![Backend](https://img.shields.io/badge/Backend-Laravel%2012-red)
 ![Frontend](https://img.shields.io/badge/Frontend-React%2018-blue)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-blue)
@@ -20,6 +21,9 @@
 
 Sistem manajemen kehadiran dan tracking task untuk karyawan Work From Home (WFH) yang lengkap dengan fitur:
 - ✅ Check-in/Check-out dengan task management
+- ✅ **NEW**: Keyboard shortcuts & multi-line paste support
+- ✅ **NEW**: Expandable task details in reports
+- ✅ **NEW**: Enhanced approve/reject buttons with animations
 - ✅ Installment system (multiple sessions per day)
 - ✅ Real-time progress tracking (7 jam kerja)
 - ✅ Leave management dengan approval workflow
@@ -491,7 +495,7 @@ This project is proprietary software. All rights reserved.
 | Deployment | ✅ Ready | Tested | 100% |
 
 **Last Updated**: 2025-11-02  
-**Version**: 1.0.0  
+**Version**: 1.1.0 (Enhanced UX)  
 **Status**: Production Ready 🚀
 
 </div>

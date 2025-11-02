@@ -282,7 +282,21 @@ Get current work status for today.
         "current_session": {
             "id": 123,
             "check_in": "2024-01-15T14:00:00.000000Z",
-            "elapsed_hours": 2.5
+            "elapsed_hours": 2.5,
+            "tasks": [
+                {
+                    "id": 1,
+                    "title": "Complete feature X",
+                    "is_completed": false,
+                    "blocker_reason": null
+                },
+                {
+                    "id": 2,
+                    "title": "Fix bug Y",
+                    "is_completed": false,
+                    "blocker_reason": null
+                }
+            ]
         },
         "today_total_hours": 6.5,
         "required_hours": 7,
@@ -420,7 +434,27 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
                         "check_out": "2024-01-15T16:30:00.000000Z",
                         "total_hours": 7.5,
                         "tasks_completed": 2,
-                        "tasks_incomplete": 1
+                        "tasks_incomplete": 1,
+                        "tasks": [
+                            {
+                                "id": 1,
+                                "title": "Complete feature X",
+                                "is_completed": true,
+                                "blocker_reason": null
+                            },
+                            {
+                                "id": 2,
+                                "title": "Fix bug Y",
+                                "is_completed": false,
+                                "blocker_reason": "Waiting for API credentials"
+                            },
+                            {
+                                "id": 3,
+                                "title": "Review PRs",
+                                "is_completed": true,
+                                "blocker_reason": null
+                            }
+                        ]
                     }
                 ],
                 "daily_total_hours": 7.5,
@@ -434,14 +468,36 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
                         "check_out": "2024-01-16T12:00:00.000000Z",
                         "total_hours": 4.0,
                         "tasks_completed": 1,
-                        "tasks_incomplete": 0
+                        "tasks_incomplete": 0,
+                        "tasks": [
+                            {
+                                "id": 4,
+                                "title": "Morning task",
+                                "is_completed": true,
+                                "blocker_reason": null
+                            }
+                        ]
                     },
                     {
                         "check_in": "2024-01-16T14:00:00.000000Z",
                         "check_out": "2024-01-16T17:00:00.000000Z",
                         "total_hours": 3.0,
                         "tasks_completed": 2,
-                        "tasks_incomplete": 0
+                        "tasks_incomplete": 0,
+                        "tasks": [
+                            {
+                                "id": 5,
+                                "title": "Afternoon task 1",
+                                "is_completed": true,
+                                "blocker_reason": null
+                            },
+                            {
+                                "id": 6,
+                                "title": "Afternoon task 2",
+                                "is_completed": true,
+                                "blocker_reason": null
+                            }
+                        ]
                     }
                 ],
                 "daily_total_hours": 7.0,
@@ -453,7 +509,7 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
 ```
 
 **Status Values:**
-- `complete`: Daily total hours ≥ 7.0
+- `complete`: Daily total hours ? 7.0
 - `incomplete`: Daily total hours < 7.0
 - `overtime`: Daily total hours > 7.0
 

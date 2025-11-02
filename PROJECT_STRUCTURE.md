@@ -3,6 +3,9 @@
 ## Overview
 This is a WFH (Work From Home) Employee Attendance & Task Tracking System with separated frontend (React) and backend (Laravel 12) architecture for scalability.
 
+**Current Version**: 1.1.0 (Enhanced UX)
+**Status**: Production Ready with Enhanced Features
+
 ## Technology Stack
 
 ### Backend
@@ -14,12 +17,14 @@ This is a WFH (Work From Home) Employee Attendance & Task Tracking System with s
 
 ### Frontend
 - **Framework**: React 18+
-- **State Management**: React Context API / Redux Toolkit
+- **State Management**: React Context API
 - **HTTP Client**: Axios
 - **Routing**: React Router v6
-- **UI Framework**: TailwindCSS + Shadcn/ui (or your preferred UI library)
-- **Form Management**: React Hook Form
-- **Date/Time**: date-fns or day.js
+- **UI Framework**: TailwindCSS (v3.4.17)
+- **Icons**: Lucide React
+- **Notifications**: React Hot Toast
+- **Date/Time**: date-fns
+- **Build Tool**: Vite
 
 ## Project Structure
 

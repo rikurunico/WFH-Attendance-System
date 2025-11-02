@@ -113,6 +113,13 @@ POST /api/v1/auth/logout
 - System logs activity
 - Check-in time can be any time of day (no restriction)
 
+**UI/UX Enhancements (v1.1.0):**
+- Keyboard shortcuts: Press `Enter` to add new task, `Ctrl+Enter` to submit
+- Multi-line paste support: Copy-paste from notepad/excel, auto-split by lines
+- Auto-focus to new task field after Enter
+- Visual hints and tips displayed in modal
+- Task counter showing current count (X/20)
+
 **Validation Rules:**
 - Tasks: required, array, minimum 1 task, maximum 20 tasks
 - Task title: required, string, maximum 255 characters
@@ -284,6 +291,12 @@ POST /api/v1/attendance/check-out
 - Highlight days with < 7 hours (incomplete)
 - Highlight days with > 7 hours (overtime)
 - Filter by date range
+
+**UI/UX Enhancements (v1.1.0):**
+- Expandable task details: Click on "X completed / Y incomplete" to view task list
+- Color-coded task cards: Green for completed, Red for incomplete
+- Shows blocker reasons for incomplete tasks
+- Chevron icons indicate expand/collapse state
 
 **API Endpoint:**
 ```
