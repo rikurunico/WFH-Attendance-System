@@ -1,0 +1,112 @@
+import { useState, useEffect } from 'react';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
+import { Input } from '../common/Input';
+
+export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], attendanceId }) => {
+  const [taskStatuses, setTaskStatuses] = useState([]);
+
+  // Initialize or update taskStatuses when tasks change
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
+      setTaskStatuses(
+        tasks.map(task => ({
+          id: task.id,
+          is_completed: false,
+          blocker_reason: '',
+        }))
+      );
+    }
+  }, [tasks]);
+
+  const updateTaskStatus = (index, field, value) => {
+    const newStatuses = [...taskStatuses];
+    newStatuses[index][field] = value;
+    
+    // Clear blocker reason if task is completed
+    if (field === 'is_completed' && value === true) {
+      newStatuses[index].blocker_reason = '';
+    }
+    
+    setTaskStatuses(newStatuses);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validate: incomplete tasks must have blocker reason
+    const hasError = taskStatuses.some(
+      status => !status.is_completed && !status.blocker_reason.trim()
+    );
+    
+    if (hasError) {
+      alert('Please provide blocker reason for incomplete tasks');
+      return;
+    }
+    
+    onSubmit(attendanceId, taskStatuses);
+  };
+
+  // Don't render if no tasks
+  if (!tasks || tasks.length === 0) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="Check Out" size="lg">
+        <div className="text-center py-8">
+          <p className="text-gray-600">No tasks found for this session.</p>
+          <p className="text-sm text-gray-500 mt-2">Please refresh the page and try again.</p>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Check Out" size="lg">
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 mb-4">
+            Mark your task completion status and provide reasons for incomplete tasks
+          </p>
+
+          <div className="space-y-4">
+            {tasks.map((task, index) => (
+              <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={taskStatuses[index]?.is_completed || false}
+                    onChange={(e) => updateTaskStatus(index, 'is_completed', e.target.checked)}
+                    className="mt-1 h-5 w-5 text-primary-600 rounded focus:ring-primary-500"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{task.title}</p>
+                  </div>
+                </div>
+
+                {taskStatuses[index] && !taskStatuses[index].is_completed && (
+                  <div className="ml-8">
+                    <Input
+                      label="Blocker Reason"
+                      value={taskStatuses[index].blocker_reason}
+                      onChange={(e) => updateTaskStatus(index, 'blocker_reason', e.target.value)}
+                      placeholder="Why couldn't you complete this task?"
+                      required={!taskStatuses[index].is_completed}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading || taskStatuses.length === 0}>
+            {loading ? 'Checking Out...' : 'Check Out'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};

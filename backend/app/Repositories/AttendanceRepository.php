@@ -36,6 +36,7 @@ class AttendanceRepository
             ->whereNotNull('check_in')
             ->whereNull('check_out')
             ->whereDate('date', Carbon::today())
+            ->with('tasks')
             ->first();
     }
 

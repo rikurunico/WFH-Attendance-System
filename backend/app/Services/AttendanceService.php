@@ -167,6 +167,14 @@ class AttendanceService
                 'id' => $activeAttendance->id,
                 'check_in' => $activeAttendance->check_in,
                 'elapsed_hours' => $this->calculateTotalHours($activeAttendance->check_in, Carbon::now()),
+                'tasks' => $activeAttendance->tasks->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'is_completed' => $task->is_completed,
+                        'blocker_reason' => $task->blocker_reason,
+                    ];
+                }),
             ] : null,
             'today_total_hours' => $todayTotalHours,
             'required_hours' => 7,
