@@ -58,7 +58,7 @@ export const Login = () => {
               <LogIn size={32} className="text-primary-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              WFH Attendance System
+              TSD
             </h1>
             <p className="text-gray-600">Sign in to your account</p>
           </div>

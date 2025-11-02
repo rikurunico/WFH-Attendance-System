@@ -60,8 +60,8 @@ export const MyReport = () => {
 
         {/* Date Filter */}
         <Card>
-          <div className="flex flex-col sm:flex-row items-end space-y-3 sm:space-y-0 sm:space-x-4">
-            <div className="flex-1">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
+            <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Start Date
               </label>
@@ -69,10 +69,10 @@ export const MyReport = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="input-field"
+                className="input-field w-full"
               />
             </div>
-            <div className="flex-1">
+            <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 End Date
               </label>
@@ -80,12 +80,17 @@ export const MyReport = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="input-field"
+                className="input-field w-full"
               />
             </div>
-            <Button onClick={handleFilter}>
-              Apply Filter
-            </Button>
+            <div className="w-full sm:w-auto">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={handleFilter}
+              >
+                Apply Filter
+              </Button>
+            </div>
           </div>
         </Card>
 

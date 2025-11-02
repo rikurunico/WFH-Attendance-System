@@ -24,7 +24,7 @@ export const Navbar = ({ onMenuClick }) => {
               <Menu size={24} />
             </button>
             <h1 className="ml-2 text-xl font-bold text-primary-600">
-              WFH Attendance System
+              TSD
             </h1>
           </div>
 
