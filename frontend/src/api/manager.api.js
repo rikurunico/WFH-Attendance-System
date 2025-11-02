@@ -22,6 +22,13 @@ export const getDailyAttendanceReport = async (date) => {
   return response.data;
 };
 
+export const getMonthlyAttendanceReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/manager/reports/monthly-attendance', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data;
+};
+
 // Attendance Management
 export const getAllAttendances = async (startDate, endDate) => {
   const response = await apiClient.get('/manager/attendances', {

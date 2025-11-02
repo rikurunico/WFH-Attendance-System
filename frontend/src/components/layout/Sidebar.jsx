@@ -8,6 +8,7 @@ import {
   Settings,
   ClipboardList,
   Activity,
+  TrendingUp,
   X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,6 +27,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { to: '/manager/users', icon: Users, label: 'User Management' },
     { to: '/manager/attendances', icon: Clock, label: 'Attendances' },
     { to: '/manager/daily-attendance-report', icon: FileText, label: 'Daily Report' },
+    { to: '/manager/monthly-attendance-report', icon: TrendingUp, label: 'Monthly Report' },
     { to: '/manager/leaves', icon: ClipboardList, label: 'Leave Approval' },
     { to: '/manager/holidays', icon: Calendar, label: 'Holidays' },
     { to: '/manager/activity-logs', icon: Activity, label: 'Activity Logs' },

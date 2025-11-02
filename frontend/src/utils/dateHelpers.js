@@ -47,5 +47,7 @@ export const getMonthStart = () => {
 };
 
 export const getMonthEnd = () => {
-  return format(new Date(), 'yyyy-MM-dd');
+  const date = new Date();
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return format(lastDay, 'yyyy-MM-dd');
 };

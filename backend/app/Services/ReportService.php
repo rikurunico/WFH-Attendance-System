@@ -314,5 +314,111 @@ class ReportService
             'employees' => $employeeReports,
         ];
     }
+
+    /**
+     * Get monthly attendance report for all employees within a date range.
+     * Shows employee list with total work hours. Clicking employee shows daily details.
+     */
+    public function getMonthlyAttendanceReport(Carbon $startDate, Carbon $endDate): array
+    {
+        $requiredWorkHours = config('attendance.required_work_hours', 7);
+        
+        $allEmployees = User::where('role', 'employee')->get();
+        $employeeReports = [];
+
+        foreach ($allEmployees as $employee) {
+            $attendances = $this->attendanceRepository->getByUserInDateRange($employee, $startDate, $endDate);
+            
+            // Group by date for daily details
+            $groupedByDate = $attendances->groupBy(function ($attendance) {
+                return $attendance->date->format('Y-m-d');
+            });
+
+            $dailyDetails = [];
+            $totalHours = 0;
+            $totalOvertimeHours = 0;
+            $totalDaysWorked = 0;
+
+            foreach ($groupedByDate as $date => $dayAttendances) {
+                $dailyTotalHours = $dayAttendances->sum('total_hours');
+                $dailyOvertimeHours = max(0, $dailyTotalHours - $requiredWorkHours);
+                
+                $totalHours += $dailyTotalHours;
+                $totalOvertimeHours += $dailyOvertimeHours;
+                $totalDaysWorked++;
+
+                // Sort attendances by check_in ascending
+                $sortedDayAttendances = $dayAttendances->sortBy(function ($attendance) {
+                    return $attendance->check_in;
+                })->values();
+
+                $sessions = $sortedDayAttendances->map(function ($attendance, $index) {
+                    $tasksCompleted = $attendance->tasks->where('is_completed', true)->count();
+                    $tasksIncomplete = $attendance->tasks->where('is_completed', false)->count();
+
+                    return [
+                        'session_number' => $index + 1,
+                        'check_in' => $attendance->check_in,
+                        'check_out' => $attendance->check_out,
+                        'total_hours' => $attendance->total_hours,
+                        'tasks_completed' => $tasksCompleted,
+                        'tasks_incomplete' => $tasksIncomplete,
+                        'tasks' => $attendance->tasks->map(function ($task) {
+                            return [
+                                'id' => $task->id,
+                                'title' => $task->title,
+                                'is_completed' => $task->is_completed,
+                                'blocker_reason' => $task->blocker_reason,
+                            ];
+                        })->values(),
+                    ];
+                })->values();
+
+                $status = 'complete';
+                if ($dailyTotalHours < $requiredWorkHours) {
+                    $status = 'incomplete';
+                } elseif ($dailyTotalHours > $requiredWorkHours) {
+                    $status = 'overtime';
+                }
+
+                $dailyDetails[] = [
+                    'date' => $date,
+                    'daily_total_hours' => round($dailyTotalHours, 2),
+                    'overtime_hours' => round($dailyOvertimeHours, 2),
+                    'status' => $status,
+                    'sessions' => $sessions,
+                ];
+            }
+
+            // Sort daily details by date descending (newest first)
+            usort($dailyDetails, function ($a, $b) {
+                return strcmp($b['date'], $a['date']);
+            });
+
+            $employeeReports[] = [
+                'employee' => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'email' => $employee->email,
+                ],
+                'total_hours' => round($totalHours, 2),
+                'total_overtime_hours' => round($totalOvertimeHours, 2),
+                'total_days_worked' => $totalDaysWorked,
+                'daily_details' => $dailyDetails,
+            ];
+        }
+
+        // Sort by employee name
+        usort($employeeReports, function ($a, $b) {
+            return strcmp($a['employee']['name'], $b['employee']['name']);
+        });
+
+        return [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+            'required_hours' => $requiredWorkHours,
+            'employees' => $employeeReports,
+        ];
+    }
 }
 

@@ -86,4 +86,29 @@ class ManagerReportController extends Controller
             ], 500);
         }
     }
+
+    public function monthlyAttendanceReport(Request $request): JsonResponse
+    {
+        try {
+            $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+            $endDate = $request->get('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
+
+            $startDate = Carbon::parse($startDate);
+            $endDate = Carbon::parse($endDate);
+
+            $report = $this->reportService->getMonthlyAttendanceReport($startDate, $endDate);
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Get monthly attendance report failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get monthly attendance report',
+            ], 500);
+        }
+    }
 }
