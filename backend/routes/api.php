@@ -63,6 +63,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(fu
         // Manager Dashboard
         Route::get('/manager/dashboard', [ManagerReportController::class, 'dashboard']);
         Route::get('/manager/reports/employee/{userId}', [ManagerReportController::class, 'employeeReport']);
+        Route::get('/manager/reports/daily-attendance', [ManagerReportController::class, 'dailyAttendanceReport']);
 
         // User Management
         Route::prefix('manager/users')->group(function () {

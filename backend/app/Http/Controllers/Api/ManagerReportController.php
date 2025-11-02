@@ -64,4 +64,26 @@ class ManagerReportController extends Controller
             ], 500);
         }
     }
+
+    public function dailyAttendanceReport(Request $request): JsonResponse
+    {
+        try {
+            $date = $request->get('date', Carbon::today()->format('Y-m-d'));
+            $date = Carbon::parse($date);
+
+            $report = $this->reportService->getDailyAttendanceReport($date);
+
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Get daily attendance report failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get daily attendance report',
+            ], 500);
+        }
+    }
 }

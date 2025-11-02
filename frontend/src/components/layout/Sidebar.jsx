@@ -25,6 +25,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { to: '/manager/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/manager/users', icon: Users, label: 'User Management' },
     { to: '/manager/attendances', icon: Clock, label: 'Attendances' },
+    { to: '/manager/daily-attendance-report', icon: FileText, label: 'Daily Report' },
     { to: '/manager/leaves', icon: ClipboardList, label: 'Leave Approval' },
     { to: '/manager/holidays', icon: Calendar, label: 'Holidays' },
     { to: '/manager/activity-logs', icon: Activity, label: 'Activity Logs' },

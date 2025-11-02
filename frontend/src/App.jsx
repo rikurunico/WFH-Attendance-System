@@ -15,6 +15,8 @@ import { MyLeave } from './pages/employee/MyLeave';
 // Manager Pages
 import { ManagerDashboard } from './pages/manager/Dashboard';
 import { UserManagement } from './pages/manager/UserManagement';
+import { AttendanceManagement } from './pages/manager/AttendanceManagement';
+import { DailyAttendanceReport } from './pages/manager/DailyAttendanceReport';
 import { HolidayManagement } from './pages/manager/HolidayManagement';
 import { LeaveApproval } from './pages/manager/LeaveApproval';
 import { ActivityLogs } from './pages/manager/ActivityLogs';
@@ -113,6 +115,22 @@ function App() {
             element={
               <PrivateRoute requiredRole="manager">
                 <UserManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/manager/attendances"
+            element={
+              <PrivateRoute requiredRole="manager">
+                <AttendanceManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/manager/daily-attendance-report"
+            element={
+              <PrivateRoute requiredRole="manager">
+                <DailyAttendanceReport />
               </PrivateRoute>
             }
           />

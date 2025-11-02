@@ -15,6 +15,13 @@ export const getEmployeeReport = async (userId, startDate, endDate) => {
   return response.data;
 };
 
+export const getDailyAttendanceReport = async (date) => {
+  const response = await apiClient.get('/manager/reports/daily-attendance', {
+    params: { date },
+  });
+  return response.data;
+};
+
 // Attendance Management
 export const getAllAttendances = async (startDate, endDate) => {
   const response = await apiClient.get('/manager/attendances', {
