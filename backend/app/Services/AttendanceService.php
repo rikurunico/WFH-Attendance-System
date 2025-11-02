@@ -177,8 +177,8 @@ class AttendanceService
                 }),
             ] : null,
             'today_total_hours' => $todayTotalHours,
-            'required_hours' => 7,
-            'remaining_hours' => max(0, 7 - $todayTotalHours),
+            'required_hours' => config('attendance.required_work_hours', 7),
+            'remaining_hours' => max(0, config('attendance.required_work_hours', 7) - $todayTotalHours),
             'previous_sessions' => $previousSessions,
         ];
     }

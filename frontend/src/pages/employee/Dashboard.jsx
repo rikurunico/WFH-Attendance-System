@@ -87,8 +87,10 @@ export const EmployeeDashboard = () => {
   const isCheckedIn = todayStatus?.is_checked_in;
   const currentSession = todayStatus?.current_session;
   const todayTotalHours = todayStatus?.today_total_hours || 0;
-  const remainingHours = Math.max(0, REQUIRED_WORK_HOURS - todayTotalHours);
-  const progressPercentage = Math.min(100, (todayTotalHours / REQUIRED_WORK_HOURS) * 100);
+  // Use required_hours from API (which uses config) or fallback to constant
+  const requiredHours = todayStatus?.required_hours || REQUIRED_WORK_HOURS;
+  const remainingHours = Math.max(0, requiredHours - todayTotalHours);
+  const progressPercentage = Math.min(100, (todayTotalHours / requiredHours) * 100);
 
   return (
     <MainLayout>
@@ -180,7 +182,7 @@ export const EmployeeDashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span>{formatHours(todayTotalHours)} worked</span>
-              <span>{REQUIRED_WORK_HOURS} hours required</span>
+              <span>{requiredHours} hours required</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4">
               <div

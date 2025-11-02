@@ -71,11 +71,13 @@ class ReportService
                 $totalTasks += $attendance->tasks->count();
             }
 
+            $requiredWorkHours = config('attendance.required_work_hours', 7);
+            
             $status = 'complete';
-            if ($dailyTotalHours < 7.0) {
+            if ($dailyTotalHours < $requiredWorkHours) {
                 $status = 'incomplete';
                 $incompleteDays++;
-            } elseif ($dailyTotalHours > 7.0) {
+            } elseif ($dailyTotalHours > $requiredWorkHours) {
                 $status = 'overtime';
             }
 
@@ -87,8 +89,9 @@ class ReportService
             ];
         }
 
+        $requiredWorkHours = config('attendance.required_work_hours', 7);
         $averageHoursPerDay = $totalDaysWorked > 0 ? round($totalHours / $totalDaysWorked, 2) : 0;
-        $requiredHours = $totalDaysWorked * 7;
+        $requiredHours = $totalDaysWorked * $requiredWorkHours;
         $overtimeHours = max(0, $totalHours - $requiredHours);
         $taskCompletionRate = $totalTasks > 0 ? round(($totalTasksCompleted / $totalTasks) * 100, 2) : 0;
 
