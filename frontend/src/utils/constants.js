@@ -1,3 +1,5 @@
+export const APP_NAME = 'TSD - Work From Home Attendance System';
+
 export const USER_ROLES = {
   EMPLOYEE: 'employee',
   MANAGER: 'manager',

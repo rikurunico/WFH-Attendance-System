@@ -6,10 +6,12 @@ import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { getMonthlyAttendanceReport } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Calendar, Clock, User, TrendingUp, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MonthlyAttendanceReport = () => {
+  usePageTitle('Laporan Bulanan');
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState(null);
   const [startDate, setStartDate] = useState(getMonthStart());

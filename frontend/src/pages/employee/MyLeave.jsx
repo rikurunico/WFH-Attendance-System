@@ -7,10 +7,12 @@ import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { requestLeave, getMyLeaveRequests } from '../../api/leave.api';
 import { formatDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Calendar, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MyLeave = () => {
+  usePageTitle('Pengajuan Cuti');
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
   const [showModal, setShowModal] = useState(false);

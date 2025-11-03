@@ -1,18 +1,30 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { LogIn } from 'lucide-react';
 
 export const Login = () => {
+  usePageTitle('Masuk');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from || '/';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,11 +46,19 @@ export const Login = () => {
       const result = await login(email, password);
       
       if (result.success) {
-        // Redirect based on role
-        if (result.user.role === 'manager') {
-          navigate('/manager/dashboard');
+        // Get intended destination from location state, or use default based on role
+        const from = location.state?.from;
+        
+        if (from) {
+          // Redirect to intended destination
+          navigate(from, { replace: true });
         } else {
-          navigate('/employee/dashboard');
+          // Default redirect based on role
+          if (result.user.role === 'manager') {
+            navigate('/manager/dashboard', { replace: true });
+          } else {
+            navigate('/employee/dashboard', { replace: true });
+          }
         }
       }
     } catch (error) {

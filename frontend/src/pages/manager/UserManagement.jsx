@@ -7,10 +7,12 @@ import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { getAllUsers, createUser, updateUser, deleteUser } from '../../api/manager.api';
 import { formatDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Users, Plus, Edit, Trash2, Shield, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const UserManagement = () => {
+  usePageTitle('Manajemen Pengguna');
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);

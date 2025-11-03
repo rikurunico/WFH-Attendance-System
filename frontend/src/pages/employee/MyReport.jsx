@@ -5,10 +5,12 @@ import { Button } from '../../components/common/Button';
 import { Loading } from '../../components/common/Loading';
 import { getMyReport } from '../../api/report.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Calendar, TrendingUp, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MyReport = () => {
+  usePageTitle('Laporan Saya');
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState(null);
   const [startDate, setStartDate] = useState(getMonthStart());

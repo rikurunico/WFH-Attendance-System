@@ -4,10 +4,13 @@ import { Card } from '../../components/common/Card';
 import { Loading } from '../../components/common/Loading';
 import { getManagerDashboard } from '../../api/manager.api';
 import { formatTime, formatHours, getTodayDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Users, UserCheck, Calendar, TrendingUp, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const ManagerDashboard = () => {
+  usePageTitle('Dashboard');
+  
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getTodayDate());

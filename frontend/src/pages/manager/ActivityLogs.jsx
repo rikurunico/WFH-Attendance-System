@@ -6,10 +6,12 @@ import { Loading } from '../../components/common/Loading';
 import { getActivityLogs } from '../../api/manager.api';
 import { getAllUsers } from '../../api/manager.api';
 import { formatDateTime } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Activity, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const ActivityLogs = () => {
+  usePageTitle('Log Aktivitas');
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState([]);

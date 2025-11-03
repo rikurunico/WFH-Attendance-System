@@ -8,10 +8,13 @@ import { CheckOutModal } from '../../components/attendance/CheckOutModal';
 import { getTodayStatus, checkIn, checkOut } from '../../api/attendance.api';
 import { formatTime, formatHours } from '../../utils/dateHelpers';
 import { REQUIRED_WORK_HOURS } from '../../utils/constants';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Clock, CheckCircle, AlertCircle, PlayCircle, StopCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const EmployeeDashboard = () => {
+  usePageTitle('Dashboard');
+  
   const [loading, setLoading] = useState(true);
   const [todayStatus, setTodayStatus] = useState(null);
   const [showCheckInModal, setShowCheckInModal] = useState(false);

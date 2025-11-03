@@ -5,10 +5,12 @@ import { Button } from '../../components/common/Button';
 import { Loading } from '../../components/common/Loading';
 import { getDailyAttendanceReport } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getTodayDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Calendar, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, User, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const DailyAttendanceReport = () => {
+  usePageTitle('Laporan Harian');
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getTodayDate());

@@ -7,10 +7,12 @@ import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { getAllAttendances, editAttendance, deleteAttendance } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Clock, Edit, Trash2, Calendar, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const AttendanceManagement = () => {
+  usePageTitle('Absensi');
   const [loading, setLoading] = useState(true);
   const [attendances, setAttendances] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);

@@ -8,10 +8,12 @@ import { Modal } from '../../components/common/Modal';
 import { getHolidays } from '../../api/holiday.api';
 import { createHoliday, updateHoliday, deleteHoliday } from '../../api/manager.api';
 import { formatDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Calendar, Plus, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const HolidayManagement = () => {
+  usePageTitle('Hari Libur');
   const [loading, setLoading] = useState(true);
   const [holidays, setHolidays] = useState([]);
   const [showModal, setShowModal] = useState(false);

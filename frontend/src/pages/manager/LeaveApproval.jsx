@@ -6,10 +6,12 @@ import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { getAllLeaveRequests, approveLeave, rejectLeave } from '../../api/manager.api';
 import { formatDate } from '../../utils/dateHelpers';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { ClipboardList, CheckCircle, XCircle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const LeaveApproval = () => {
+  usePageTitle('Persetujuan Cuti');
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
   const [filterStatus, setFilterStatus] = useState('pending');
