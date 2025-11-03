@@ -93,15 +93,6 @@ export const Login = () => {
               {loading ? 'Masuk...' : 'Masuk'}
             </Button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-2">Kredensial Demo:</p>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Karyawan:</strong> employee@example.com / password123</p>
-              <p><strong>Manager:</strong> manager@example.com / password123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
