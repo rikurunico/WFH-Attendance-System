@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
-export const Sidebar = ({ isOpen, onClose }) => {
+export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
   const { isEmployee, isManager } = useAuth();
 
   const employeeLinks = [
@@ -47,9 +47,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:fixed inset-y-0 left-0 z-30 bg-white shadow-lg transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } ${
+          collapsed ? 'lg:w-0 lg:overflow-hidden' : 'lg:w-64'
         }`}
+        style={{ top: '64px', height: 'calc(100vh - 64px)' }}
       >
         <div className="h-full flex flex-col">
           {/* Close button for mobile */}
@@ -60,7 +63,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className={`flex-1 px-4 py-6 space-y-2 overflow-y-auto ${collapsed ? 'lg:hidden' : ''}`}>
             {links.map((link) => (
               <NavLink
                 key={link.to}

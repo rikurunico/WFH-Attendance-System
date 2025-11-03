@@ -4,15 +4,26 @@ import { Sidebar } from './Sidebar';
 
 export const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Navbar 
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+        onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        sidebarCollapsed={sidebarCollapsed}
+      />
       
-      <div className="flex">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex pt-16">
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+        />
         
-        <main className="flex-1 p-6 lg:p-8">
+        <main className={`flex-1 p-6 lg:p-8 transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-64'
+        }`}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
