@@ -7,7 +7,14 @@ export const formatDate = (date) => {
 
 export const formatDateTime = (date) => {
   if (!date) return '-';
-  return format(parseISO(date), 'dd MMM yyyy HH:mm');
+  try {
+    // Handle ISO string format
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, 'dd MMM yyyy HH:mm');
+  } catch (error) {
+    console.error('Error formatting date:', date, error);
+    return '-';
+  }
 };
 
 export const formatTime = (date) => {
@@ -29,11 +36,11 @@ export const calculateHours = (startDate, endDate) => {
 };
 
 export const formatHours = (hours) => {
-  if (!hours) return '0 hours';
+  if (!hours) return '0 jam';
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
-  if (m === 0) return `${h} hours`;
-  return `${h}h ${m}m`;
+  if (m === 0) return `${h} jam`;
+  return `${h}j ${m}m`;
 };
 
 export const getTodayDate = () => {

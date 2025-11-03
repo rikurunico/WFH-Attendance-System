@@ -21,8 +21,8 @@ export const Login = () => {
 
     // Validation
     const newErrors = {};
-    if (!email) newErrors.email = 'Email is required';
-    if (!password) newErrors.password = 'Password is required';
+    if (!email) newErrors.email = 'Email wajib diisi';
+    if (!password) newErrors.password = 'Kata sandi wajib diisi';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -60,7 +60,7 @@ export const Login = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               TSD
             </h1>
-            <p className="text-gray-600">Sign in to your account</p>
+            <p className="text-gray-600">Masuk ke akun Anda</p>
           </div>
 
           {/* Form */}
@@ -71,17 +71,17 @@ export const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={errors.email}
-              placeholder="employee@example.com"
+              placeholder="karyawan@example.com"
               required
             />
 
             <Input
-              label="Password"
+              label="Kata Sandi"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={errors.password}
-              placeholder="Enter your password"
+              placeholder="Masukkan kata sandi Anda"
               required
             />
 
@@ -90,15 +90,15 @@ export const Login = () => {
               disabled={loading}
               className="w-full"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Masuk...' : 'Masuk'}
             </Button>
           </form>
 
           {/* Demo credentials */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-2">Demo Credentials:</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">Kredensial Demo:</p>
             <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Employee:</strong> employee@example.com / password123</p>
+              <p><strong>Karyawan:</strong> employee@example.com / password123</p>
               <p><strong>Manager:</strong> manager@example.com / password123</p>
             </div>
           </div>

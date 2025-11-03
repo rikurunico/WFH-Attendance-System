@@ -29,7 +29,7 @@ export const MyReport = () => {
       }
     } catch (error) {
       console.error('Error fetching report:', error);
-      toast.error('Failed to fetch report');
+      toast.error('Gagal mengambil laporan');
     } finally {
       setLoading(false);
     }
@@ -68,8 +68,8 @@ export const MyReport = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Work Report</h1>
-          <p className="text-gray-600 mt-1">Track your work hours and productivity</p>
+          <h1 className="text-3xl font-bold text-gray-900">Laporan Kerja Saya</h1>
+          <p className="text-gray-600 mt-1">Lacak jam kerja dan produktivitas Anda</p>
         </div>
 
         {/* Date Filter */}
@@ -77,7 +77,7 @@ export const MyReport = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Tanggal Mulai
               </label>
               <input
                 type="date"
@@ -88,7 +88,7 @@ export const MyReport = () => {
             </div>
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                Tanggal Akhir
               </label>
               <input
                 type="date"
@@ -102,7 +102,7 @@ export const MyReport = () => {
                 className="w-full sm:w-auto"
                 onClick={handleFilter}
               >
-                Apply Filter
+                Terapkan Filter
               </Button>
             </div>
           </div>
@@ -113,7 +113,7 @@ export const MyReport = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Days Worked</p>
+                <p className="text-sm text-gray-600 mb-1">Total Hari Kerja</p>
                 <p className="text-2xl font-bold text-gray-900">{summary.total_days_worked || 0}</p>
               </div>
               <div className="p-3 rounded-full bg-primary-100">
@@ -125,7 +125,7 @@ export const MyReport = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Hours</p>
+                <p className="text-sm text-gray-600 mb-1">Total Jam</p>
                 <p className="text-2xl font-bold text-primary-600">
                   {formatHours(summary.total_hours || 0)}
                 </p>
@@ -139,9 +139,9 @@ export const MyReport = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Avg Hours/Day</p>
+                <p className="text-sm text-gray-600 mb-1">Rata-rata Jam/Hari</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {(summary.average_hours_per_day || 0).toFixed(1)}h
+                  {(summary.average_hours_per_day || 0).toFixed(1)}j
                 </p>
               </div>
               <div className="p-3 rounded-full bg-green-100">
@@ -153,7 +153,7 @@ export const MyReport = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Task Completion</p>
+                <p className="text-sm text-gray-600 mb-1">Tingkat Penyelesaian Tugas</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {(summary.task_completion_rate || 0).toFixed(1)}%
                 </p>
@@ -170,16 +170,16 @@ export const MyReport = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Overtime Hours</p>
+                <p className="text-sm text-gray-600">Jam Lembur</p>
                 <p className="text-lg font-semibold text-orange-600">
                   {formatHours(summary.overtime_hours)}
                 </p>
               </div>
               {summary.incomplete_days > 0 && (
                 <div>
-                  <p className="text-sm text-gray-600">Incomplete Days</p>
+                  <p className="text-sm text-gray-600">Hari Tidak Lengkap</p>
                   <p className="text-lg font-semibold text-red-600">
-                    {summary.incomplete_days} days
+                    {summary.incomplete_days} hari
                   </p>
                 </div>
               )}
@@ -188,10 +188,10 @@ export const MyReport = () => {
         )}
 
         {/* Attendance Details */}
-        <Card title="Attendance Details">
+        <Card title="Detail Absensi">
           {attendances.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No attendance records found for the selected period
+              Tidak ada catatan absensi ditemukan untuk periode yang dipilih
             </div>
           ) : (
             <div className="space-y-4">
@@ -211,7 +211,7 @@ export const MyReport = () => {
                         ? 'badge-warning'
                         : 'badge-info'
                     }`}>
-                      {attendance.status}
+                      {attendance.status === 'complete' ? 'Lengkap' : attendance.status === 'incomplete' ? 'Tidak Lengkap' : 'Lembur'}
                     </span>
                   </div>
 
@@ -226,7 +226,7 @@ export const MyReport = () => {
                         <div key={sessionIndex} className="bg-gray-50 rounded p-3">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-medium text-gray-700">
-                              Session {sessionIndex + 1}
+                              Sesi {sessionIndex + 1}
                             </p>
                             <p className="text-sm text-gray-600">
                               {formatHours(session.total_hours)}
@@ -244,7 +244,7 @@ export const MyReport = () => {
                                 className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors"
                               >
                                 <CheckCircle size={14} />
-                                <span>{session.tasks_completed} completed</span>
+                                <span>{session.tasks_completed} selesai</span>
                                 {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
                             )}
@@ -254,7 +254,7 @@ export const MyReport = () => {
                                 className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                               >
                                 <XCircle size={14} />
-                                <span>{session.tasks_incomplete} incomplete</span>
+                                <span>{session.tasks_incomplete} belum selesai</span>
                                 {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
                             )}
@@ -263,7 +263,7 @@ export const MyReport = () => {
                           {/* Expanded Task Details */}
                           {isExpanded && session.tasks && session.tasks.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-200">
-                              <p className="text-xs font-medium text-gray-700 mb-2">Task Details:</p>
+                              <p className="text-xs font-medium text-gray-700 mb-2">Detail Tugas:</p>
                               <div className="space-y-2">
                                 {session.tasks.map((task, taskIndex) => (
                                   <div

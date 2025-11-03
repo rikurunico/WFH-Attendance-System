@@ -39,7 +39,7 @@ export const HolidayManagement = () => {
       }
     } catch (error) {
       console.error('Error fetching holidays:', error);
-      toast.error('Failed to fetch holidays');
+      toast.error('Gagal mengambil data hari libur');
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export const HolidayManagement = () => {
         fetchHolidays();
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Operation failed';
+      const message = error.response?.data?.message || 'Operasi gagal';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -101,7 +101,7 @@ export const HolidayManagement = () => {
   };
 
   const handleDelete = async (holidayId, holidayName) => {
-    if (!confirm(`Are you sure you want to delete ${holidayName}?`)) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${holidayName}?`)) {
       return;
     }
 
@@ -113,7 +113,7 @@ export const HolidayManagement = () => {
         fetchHolidays();
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to delete holiday';
+      const message = error.response?.data?.message || 'Gagal menghapus hari libur';
       toast.error(message);
     }
   };
@@ -132,8 +132,8 @@ export const HolidayManagement = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Holiday Management</h1>
-            <p className="text-gray-600 mt-1">Manage company holidays</p>
+            <h1 className="text-3xl font-bold text-gray-900">Manajemen Hari Libur</h1>
+            <p className="text-gray-600 mt-1">Kelola hari libur perusahaan</p>
           </div>
           <div className="flex items-center space-x-4">
             <select
@@ -150,7 +150,7 @@ export const HolidayManagement = () => {
               className="flex items-center space-x-2"
             >
               <Plus size={20} />
-              <span>Add Holiday</span>
+              <span>Tambah</span>
             </Button>
           </div>
         </div>
@@ -160,13 +160,13 @@ export const HolidayManagement = () => {
           {holidays.length === 0 ? (
             <div className="text-center py-12">
               <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">No holidays found for {selectedYear}</p>
+              <p className="text-gray-600">Tidak ada hari libur ditemukan untuk {selectedYear}</p>
               <Button
                 onClick={() => handleOpenModal()}
                 variant="outline"
                 className="mt-4"
               >
-                Add First Holiday
+                Tambah Hari Libur Pertama
               </Button>
             </div>
           ) : (
@@ -217,20 +217,20 @@ export const HolidayManagement = () => {
       <Modal
         isOpen={showModal}
         onClose={handleCloseModal}
-        title={editingHoliday ? 'Edit Holiday' : 'Add New Holiday'}
+        title={editingHoliday ? 'Edit Hari Libur' : 'Tambah Hari Libur Baru'}
         size="md"
       >
         <form onSubmit={handleSubmit}>
           <Input
-            label="Holiday Name"
+            label="Nama Hari Libur"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g., Christmas Day"
+            placeholder="contoh: Hari Raya Idul Fitri"
             required
           />
 
           <Input
-            label="Date"
+            label="Tanggal"
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
@@ -239,14 +239,14 @@ export const HolidayManagement = () => {
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
+              Deskripsi
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="input-field"
               rows="3"
-              placeholder="Optional description"
+              placeholder="Deskripsi opsional"
             />
           </div>
 
@@ -256,10 +256,10 @@ export const HolidayManagement = () => {
               variant="secondary"
               onClick={handleCloseModal}
             >
-              Cancel
+              Batal
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? 'Saving...' : editingHoliday ? 'Update Holiday' : 'Create Holiday'}
+              {submitting ? 'Menyimpan...' : editingHoliday ? 'Perbarui Hari Libur' : 'Buat Hari Libur'}
             </Button>
           </div>
         </form>

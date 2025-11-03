@@ -23,6 +23,7 @@ export const ActivityLogs = () => {
   useEffect(() => {
     fetchUsers();
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
@@ -39,14 +40,24 @@ export const ActivityLogs = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await getActivityLogs(filters);
+      // Clean filters - remove empty strings
+      const cleanFilters = {};
+      if (filters.user_id) cleanFilters.user_id = filters.user_id;
+      if (filters.action) cleanFilters.action = filters.action;
+      if (filters.start_date) cleanFilters.start_date = filters.start_date;
+      if (filters.end_date) cleanFilters.end_date = filters.end_date;
+      
+      const response = await getActivityLogs(cleanFilters);
       
       if (response.success) {
         setLogs(response.data.logs || []);
+      } else {
+        toast.error(response.message || 'Gagal mengambil log aktivitas');
       }
     } catch (error) {
       console.error('Error fetching activity logs:', error);
-      toast.error('Failed to fetch activity logs');
+      const errorMessage = error.response?.data?.message || 'Gagal mengambil log aktivitas';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -57,13 +68,51 @@ export const ActivityLogs = () => {
   };
 
   const handleClearFilters = () => {
-    setFilters({
+    const emptyFilters = {
       user_id: '',
       action: '',
       start_date: '',
       end_date: '',
-    });
-    setTimeout(() => fetchLogs(), 100);
+    };
+    setFilters(emptyFilters);
+    // Reset filters and fetch logs with empty filters
+    setTimeout(() => {
+      // Use empty filters directly
+      getActivityLogs({})
+        .then((response) => {
+          if (response.success) {
+            setLogs(response.data.logs || []);
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching activity logs:', error);
+          toast.error('Gagal mengambil log aktivitas');
+        });
+    }, 100);
+  };
+
+  const getActionLabel = (action) => {
+    const labels = {
+      login: 'Login',
+      logout: 'Logout',
+      check_in: 'Check In',
+      check_out: 'Check Out',
+      task_created: 'Tugas Dibuat',
+      task_updated: 'Tugas Diperbarui',
+      attendance_edited: 'Absensi Diedit',
+      attendance_deleted: 'Absensi Dihapus',
+      user_created: 'Pengguna Dibuat',
+      user_updated: 'Pengguna Diperbarui',
+      user_deleted: 'Pengguna Dihapus',
+      leave_requested: 'Cuti Diajukan',
+      leave_approved: 'Cuti Disetujui',
+      leave_rejected: 'Cuti Ditolak',
+      holiday_created: 'Hari Libur Dibuat',
+      holiday_updated: 'Hari Libur Diperbarui',
+      holiday_deleted: 'Hari Libur Dihapus',
+      auto_checkout: 'Auto Check Out',
+    };
+    return labels[action] || action;
   };
 
   const getActionBadge = (action) => {
@@ -124,23 +173,23 @@ export const ActivityLogs = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
-          <p className="text-gray-600 mt-1">Monitor all system activities and user actions</p>
+          <h1 className="text-3xl font-bold text-gray-900">Log Aktivitas</h1>
+          <p className="text-gray-600 mt-1">Pantau semua aktivitas sistem dan aksi pengguna</p>
         </div>
 
         {/* Filters */}
-        <Card title="Filters">
+        <Card title="Filter">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                User
+                Pengguna
               </label>
               <select
                 value={filters.user_id}
                 onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
                 className="input-field"
               >
-                <option value="">All Users</option>
+                <option value="">Semua Pengguna</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}
@@ -151,17 +200,17 @@ export const ActivityLogs = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Action Type
+                Jenis Aksi
               </label>
               <select
                 value={filters.action}
                 onChange={(e) => setFilters({ ...filters, action: e.target.value })}
                 className="input-field"
               >
-                <option value="">All Actions</option>
+                <option value="">Semua Aksi</option>
                 {actionTypes.map((action) => (
                   <option key={action} value={action}>
-                    {action.replace(/_/g, ' ')}
+                    {getActionLabel(action)}
                   </option>
                 ))}
               </select>
@@ -169,7 +218,7 @@ export const ActivityLogs = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Tanggal Mulai
               </label>
               <input
                 type="date"
@@ -181,7 +230,7 @@ export const ActivityLogs = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                Tanggal Akhir
               </label>
               <input
                 type="date"
@@ -195,10 +244,10 @@ export const ActivityLogs = () => {
           <div className="flex items-center space-x-3 mt-4">
             <Button onClick={handleFilter} className="flex items-center space-x-2">
               <Filter size={18} />
-              <span>Apply Filters</span>
+              <span>Terapkan Filter</span>
             </Button>
             <Button onClick={handleClearFilters} variant="secondary">
-              Clear Filters
+              Hapus Filter
             </Button>
           </div>
         </Card>
@@ -208,7 +257,7 @@ export const ActivityLogs = () => {
           {logs.length === 0 ? (
             <div className="text-center py-12">
               <Activity size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">No activity logs found</p>
+              <p className="text-gray-600">Tidak ada log aktivitas ditemukan</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -221,23 +270,27 @@ export const ActivityLogs = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className={`badge ${getActionBadge(log.action)}`}>
-                          {log.action.replace(/_/g, ' ')}
+                          {getActionLabel(log.action)}
                         </span>
-                        <p className="text-sm font-medium text-gray-900">
-                          {log.user.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {log.user.email}
-                        </p>
+                        {log.user && (
+                          <>
+                            <p className="text-sm font-medium text-gray-900">
+                              {log.user.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {log.user.email}
+                            </p>
+                          </>
+                        )}
                       </div>
                       
                       <p className="text-sm text-gray-700 mb-2">
-                        {log.description}
+                        {log.description || '-'}
                       </p>
                       
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <span>{formatDateTime(log.created_at)}</span>
-                        <span>IP: {log.ip_address}</span>
+                        {log.ip_address && <span>IP: {log.ip_address}</span>}
                       </div>
                     </div>
                   </div>

@@ -88,7 +88,7 @@ export const AttendanceManagement = () => {
     e.preventDefault();
 
     if (!editFormData.reason || editFormData.reason.length < 10) {
-      toast.error('Reason is required (minimum 10 characters)');
+      toast.error('Alasan wajib diisi (minimal 10 karakter)');
       return;
     }
 
@@ -152,8 +152,8 @@ export const AttendanceManagement = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Attendance Management</h1>
-          <p className="text-gray-600 mt-1">Manage all employee attendance records</p>
+          <h1 className="text-3xl font-bold text-gray-900">Manajemen Absensi</h1>
+          <p className="text-gray-600 mt-1">Kelola semua catatan absensi karyawan</p>
         </div>
 
         {/* Date Filter */}
@@ -161,7 +161,7 @@ export const AttendanceManagement = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Tanggal Mulai
               </label>
               <input
                 type="date"
@@ -172,7 +172,7 @@ export const AttendanceManagement = () => {
             </div>
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                Tanggal Akhir
               </label>
               <input
                 type="date"
@@ -186,7 +186,7 @@ export const AttendanceManagement = () => {
                 className="w-full sm:w-auto"
                 onClick={handleFilter}
               >
-                Apply Filter
+                Terapkan Filter
               </Button>
             </div>
           </div>
@@ -196,7 +196,7 @@ export const AttendanceManagement = () => {
         <Card>
           {attendances.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No attendance records found for the selected period
+              Tidak ada catatan absensi ditemukan untuk periode yang dipilih
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -204,10 +204,10 @@ export const AttendanceManagement = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Employee
+                      Karyawan
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      Tanggal
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Check In
@@ -216,13 +216,13 @@ export const AttendanceManagement = () => {
                       Check Out
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Hours
+                      Total Jam
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tasks
+                      Tugas
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Aksi
                     </th>
                   </tr>
                 </thead>
@@ -259,10 +259,10 @@ export const AttendanceManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex flex-col">
                           <span className="text-green-600">
-                            {attendance.tasks?.filter(t => t.is_completed).length || 0} completed
+                            {attendance.tasks?.filter(t => t.is_completed).length || 0} selesai
                           </span>
                           <span className="text-red-600">
-                            {attendance.tasks?.filter(t => !t.is_completed).length || 0} incomplete
+                            {attendance.tasks?.filter(t => !t.is_completed).length || 0} belum selesai
                           </span>
                         </div>
                       </td>
@@ -278,7 +278,7 @@ export const AttendanceManagement = () => {
                           <button
                             onClick={() => handleOpenDeleteModal(attendance)}
                             className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded"
-                            title="Delete"
+                            title="Hapus"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -296,12 +296,12 @@ export const AttendanceManagement = () => {
         <Modal
           isOpen={showEditModal}
           onClose={handleCloseEditModal}
-          title="Edit Attendance"
+          title="Edit Absensi"
         >
           <form onSubmit={handleEditSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Employee
+                Karyawan
               </label>
               <div className="input-field bg-gray-100">
                 {editingAttendance?.user?.name} ({editingAttendance?.user?.email})
@@ -335,14 +335,14 @@ export const AttendanceManagement = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason <span className="text-red-500">*</span>
+                Alasan <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={editFormData.reason}
                 onChange={(e) => setEditFormData({ ...editFormData, reason: e.target.value })}
                 className="input-field w-full"
                 rows="3"
-                placeholder="Reason for editing this attendance (minimum 10 characters)"
+                placeholder="Alasan untuk mengedit absensi ini (minimal 10 karakter)"
                 required
               />
             </div>
@@ -354,13 +354,13 @@ export const AttendanceManagement = () => {
                 onClick={handleCloseEditModal}
                 disabled={submitting}
               >
-                Cancel
+                Batal
               </Button>
               <Button
                 type="submit"
                 disabled={submitting}
               >
-                {submitting ? 'Updating...' : 'Update Attendance'}
+                {submitting ? 'Memperbarui...' : 'Perbarui Absensi'}
               </Button>
             </div>
           </form>
@@ -370,16 +370,16 @@ export const AttendanceManagement = () => {
         <Modal
           isOpen={showDeleteModal}
           onClose={handleCloseDeleteModal}
-          title="Delete Attendance"
+          title="Hapus Absensi"
         >
           <form onSubmit={handleDeleteSubmit} className="space-y-4">
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                Are you sure you want to delete this attendance record for{' '}
+                Apakah Anda yakin ingin menghapus catatan absensi untuk{' '}
                 <strong>{editingAttendance?.user?.name}</strong>?
               </p>
               <p className="text-xs text-gray-500 mb-4">
-                Date: {formatDate(editingAttendance?.date)}<br />
+                Tanggal: {formatDate(editingAttendance?.date)}<br />
                 Check In: {formatTime(editingAttendance?.check_in)}<br />
                 Check Out: {editingAttendance?.check_out ? formatTime(editingAttendance.check_out) : '-'}
               </p>
@@ -387,14 +387,14 @@ export const AttendanceManagement = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason <span className="text-red-500">*</span>
+                Alasan <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
                 className="input-field w-full"
                 rows="3"
-                placeholder="Reason for deleting this attendance (minimum 10 characters)"
+                placeholder="Alasan untuk menghapus absensi ini (minimal 10 karakter)"
                 required
               />
             </div>
@@ -406,14 +406,14 @@ export const AttendanceManagement = () => {
                 onClick={handleCloseDeleteModal}
                 disabled={submitting}
               >
-                Cancel
+                Batal
               </Button>
               <Button
                 type="submit"
                 variant="danger"
                 disabled={submitting}
               >
-                {submitting ? 'Deleting...' : 'Delete Attendance'}
+                {submitting ? 'Menghapus...' : 'Hapus Absensi'}
               </Button>
             </div>
           </form>

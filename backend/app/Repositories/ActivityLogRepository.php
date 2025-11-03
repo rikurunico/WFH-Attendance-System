@@ -41,10 +41,14 @@ class ActivityLogRepository
         }
 
         if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
+            $query->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
+        } elseif ($startDate) {
+            $query->where('created_at', '>=', $startDate->startOfDay());
+        } elseif ($endDate) {
+            $query->where('created_at', '<=', $endDate->endOfDay());
         }
 
-        return $query->orderBy('created_at', 'desc')->get();
+        return $query->orderBy('created_at', 'desc')->limit($perPage)->get();
     }
 
     /**

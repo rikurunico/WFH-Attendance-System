@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
@@ -6,16 +6,53 @@ import { Plus, X, ClipboardPaste } from 'lucide-react';
 
 export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [tasks, setTasks] = useState([{ title: '' }]);
+  const inputRefs = useRef({});
 
-  const addTask = () => {
+  // Reset tasks when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTasks([{ title: '' }]);
+      inputRefs.current = {};
+    }
+  }, [isOpen]);
+
+  // Focus first input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+      }, 100);
+    }
+  }, [isOpen]);
+
+  const addTask = (focusIndex = null) => {
     if (tasks.length < 20) {
       setTasks([...tasks, { title: '' }]);
+      // Focus on new task after state update
+      if (focusIndex !== null) {
+        setTimeout(() => {
+          const newIndex = focusIndex + 1;
+          if (inputRefs.current[newIndex]) {
+            inputRefs.current[newIndex].focus();
+          }
+        }, 50);
+      }
     }
   };
 
   const removeTask = (index) => {
     if (tasks.length > 1) {
       setTasks(tasks.filter((_, i) => i !== index));
+      // Update refs after removal - need to wait for re-render
+      setTimeout(() => {
+        // Focus on previous input or next input after removal
+        const focusIndex = index > 0 ? index - 1 : 0;
+        if (inputRefs.current[focusIndex]) {
+          inputRefs.current[focusIndex].focus();
+        }
+      }, 50);
     }
   };
 
@@ -32,14 +69,7 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
       
       // Only add if current task is not empty
       if (tasks[index].title.trim() !== '' && tasks.length < 20) {
-        addTask();
-        // Focus on new task after a short delay
-        setTimeout(() => {
-          const inputs = document.querySelectorAll('input[placeholder^="Task"]');
-          if (inputs[index + 1]) {
-            inputs[index + 1].focus();
-          }
-        }, 50);
+        addTask(index);
       }
     }
     
@@ -76,10 +106,24 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
       
       setTasks(newTasks);
       
+      // Focus on the last added input after paste
+      const lastAddedIndex = index + tasksToAdd.length - 1;
+      setTimeout(() => {
+        if (inputRefs.current[lastAddedIndex]) {
+          inputRefs.current[lastAddedIndex].focus();
+          // Move cursor to end of input
+          const input = inputRefs.current[lastAddedIndex];
+          if (input && input.setSelectionRange) {
+            const length = input.value.length;
+            input.setSelectionRange(length, length);
+          }
+        }
+      }, 50);
+      
       // Show info if some tasks were skipped
       if (lines.length > availableSlots) {
         setTimeout(() => {
-          alert(`Added ${availableSlots} tasks. ${lines.length - availableSlots} tasks skipped (max 20 tasks allowed).`);
+          alert(`${availableSlots} tugas ditambahkan. ${lines.length - availableSlots} tugas dilewati (maksimal 20 tugas).`);
         }, 100);
       }
     }
@@ -106,7 +150,7 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-sm text-gray-600">
-                Add tasks you plan to work on today
+                Tambahkan tugas yang akan Anda kerjakan hari ini
               </p>
             </div>
           </div>
@@ -116,8 +160,8 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
             <div className="flex items-start space-x-2">
               <ClipboardPaste size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-800">
-                <strong>Copy-Paste Multiple Tasks:</strong> Paste from notepad/excel with each task on a new line. 
-                They will be automatically split into separate tasks!
+                <strong>Salin-Tempel Banyak Tugas:</strong> Tempel dari notepad/excel dengan setiap tugas di baris baru. 
+                Tugas akan otomatis dipisah menjadi tugas terpisah!
               </div>
             </div>
           </div>
@@ -126,22 +170,33 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
             {tasks.map((task, index) => (
               <div key={index} className="flex items-start space-x-2">
                 <div className="flex-1">
-                  <Input
-                    value={task.title}
-                    onChange={(e) => updateTask(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, index)}
-                    onPaste={(e) => handlePaste(e, index)}
-                    placeholder={`Task ${index + 1}`}
-                    required={index === 0}
-                    autoFocus={index === 0}
-                  />
+                  <div ref={(el) => {
+                    // Store the wrapper element and find input within it after render
+                    if (el) {
+                      setTimeout(() => {
+                        const inputElement = el.querySelector('input');
+                        if (inputElement) {
+                          inputRefs.current[index] = inputElement;
+                        }
+                      }, 0);
+                    }
+                  }}>
+                    <Input
+                      value={task.title}
+                      onChange={(e) => updateTask(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, index)}
+                      onPaste={(e) => handlePaste(e, index)}
+                      placeholder={`Tugas ${index + 1}`}
+                      required={index === 0}
+                    />
+                  </div>
                 </div>
                 {tasks.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeTask(index)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg mt-1"
-                    title="Remove task"
+                    title="Hapus tugas"
                   >
                     <X size={20} />
                   </button>
@@ -157,23 +212,23 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
               className="mt-3 flex items-center space-x-2 text-primary-600 hover:text-primary-700 transition-colors"
             >
               <Plus size={20} />
-              <span>Add Task ({tasks.length}/20)</span>
+              <span>Tambah Tugas ({tasks.length}/20)</span>
             </button>
           )}
 
           {tasks.length >= 20 && (
             <p className="mt-3 text-sm text-orange-600">
-              Maximum 20 tasks reached. Remove some tasks to add more.
+              Maksimal 20 tugas tercapai. Hapus beberapa tugas untuk menambah lebih banyak.
             </p>
           )}
         </div>
 
         <div className="flex justify-end space-x-3">
           <Button type="button" variant="secondary" onClick={handleClose}>
-            Cancel
+            Batal
           </Button>
           <Button type="submit" disabled={loading || tasks.every(t => t.title.trim() === '')}>
-            {loading ? 'Checking In...' : 'Check In'}
+            {loading ? 'Check In...' : 'Check In'}
           </Button>
         </div>
       </form>

@@ -33,7 +33,7 @@ export const LeaveApproval = () => {
       }
     } catch (error) {
       console.error('Error fetching leaves:', error);
-      toast.error('Failed to fetch leave requests');
+      toast.error('Gagal mengambil pengajuan cuti');
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export const LeaveApproval = () => {
         fetchLeaves();
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Operation failed';
+      const message = error.response?.data?.message || 'Operasi gagal';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -108,8 +108,8 @@ export const LeaveApproval = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Leave Approval</h1>
-            <p className="text-gray-600 mt-1">Review and manage employee leave requests</p>
+            <h1 className="text-3xl font-bold text-gray-900">Persetujuan Cuti</h1>
+            <p className="text-gray-600 mt-1">Tinjau dan kelola pengajuan cuti karyawan</p>
           </div>
           <div>
             <select
@@ -117,10 +117,10 @@ export const LeaveApproval = () => {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="input-field"
             >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="">Semua Status</option>
+              <option value="pending">Menunggu</option>
+              <option value="approved">Disetujui</option>
+              <option value="rejected">Ditolak</option>
             </select>
           </div>
         </div>
@@ -132,8 +132,8 @@ export const LeaveApproval = () => {
               <ClipboardList size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600">
                 {filterStatus 
-                  ? `No ${filterStatus} leave requests found`
-                  : 'No leave requests found'}
+                  ? `Tidak ada pengajuan cuti ${filterStatus === 'pending' ? 'menunggu' : filterStatus === 'approved' ? 'disetujui' : 'ditolak'} ditemukan`
+                  : 'Tidak ada pengajuan cuti ditemukan'}
               </p>
             </div>
           ) : (
@@ -155,25 +155,25 @@ export const LeaveApproval = () => {
                       </div>
                     </div>
                     <span className={`badge ${getStatusBadge(leave.status)}`}>
-                      {leave.status}
+                      {leave.status === 'pending' ? 'Menunggu' : leave.status === 'approved' ? 'Disetujui' : 'Ditolak'}
                     </span>
                   </div>
 
                   <div className="bg-gray-50 rounded p-3 mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Reason:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-1">Alasan:</p>
                     <p className="text-sm text-gray-600">{leave.reason}</p>
                   </div>
 
                   {leave.notes && (
                     <div className="bg-blue-50 rounded p-3 mb-3">
-                      <p className="text-sm font-medium text-blue-700 mb-1">Notes:</p>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Catatan:</p>
                       <p className="text-sm text-blue-600">{leave.notes}</p>
                     </div>
                   )}
 
                   {leave.approver && (
                     <p className="text-xs text-gray-500 mb-3">
-                      {leave.status === 'approved' ? 'Approved' : 'Rejected'} by {leave.approver.name} on {formatDate(leave.approved_at)}
+                      {leave.status === 'approved' ? 'Disetujui' : 'Ditolak'} oleh {leave.approver.name} pada {formatDate(leave.approved_at)}
                     </p>
                   )}
 
@@ -185,7 +185,7 @@ export const LeaveApproval = () => {
                       >
                         <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
                         <CheckCircle size={20} className="relative z-10" />
-                        <span className="relative z-10">Approve</span>
+                        <span className="relative z-10">Setujui</span>
                       </button>
                       <button
                         onClick={() => handleOpenModal(leave, 'reject')}
@@ -193,7 +193,7 @@ export const LeaveApproval = () => {
                       >
                         <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-200"></div>
                         <XCircle size={20} className="relative z-10" />
-                        <span className="relative z-10">Reject</span>
+                        <span className="relative z-10">Tolak</span>
                       </button>
                     </div>
                   )}
@@ -208,26 +208,26 @@ export const LeaveApproval = () => {
       <Modal
         isOpen={showModal}
         onClose={handleCloseModal}
-        title={actionType === 'approve' ? 'Approve Leave Request' : 'Reject Leave Request'}
+        title={actionType === 'approve' ? 'Setujui Pengajuan Cuti' : 'Tolak Pengajuan Cuti'}
         size="md"
       >
         {selectedLeave && (
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
-                <strong>Employee:</strong> {selectedLeave.user.name}
+                <strong>Karyawan:</strong> {selectedLeave.user.name}
               </p>
               <p className="text-sm text-gray-600 mb-2">
-                <strong>Period:</strong> {formatDate(selectedLeave.start_date)} - {formatDate(selectedLeave.end_date)}
+                <strong>Periode:</strong> {formatDate(selectedLeave.start_date)} - {formatDate(selectedLeave.end_date)}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Reason:</strong> {selectedLeave.reason}
+                <strong>Alasan:</strong> {selectedLeave.reason}
               </p>
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes (Optional)
+                Catatan (Opsional)
               </label>
               <textarea
                 value={notes}
@@ -235,8 +235,8 @@ export const LeaveApproval = () => {
                 className="input-field"
                 rows="4"
                 placeholder={actionType === 'approve' 
-                  ? 'Add approval notes (optional)' 
-                  : 'Provide reason for rejection (optional)'}
+                  ? 'Tambahkan catatan persetujuan (opsional)' 
+                  : 'Berikan alasan penolakan (opsional)'}
               />
             </div>
 
@@ -246,14 +246,14 @@ export const LeaveApproval = () => {
                 variant="secondary"
                 onClick={handleCloseModal}
               >
-                Cancel
+                Batal
               </Button>
               <Button 
                 type="submit" 
                 disabled={submitting}
                 variant={actionType === 'approve' ? 'success' : 'danger'}
               >
-                {submitting ? 'Processing...' : actionType === 'approve' ? 'Approve' : 'Reject'}
+                {submitting ? 'Memproses...' : actionType === 'approve' ? 'Setujui' : 'Tolak'}
               </Button>
             </div>
           </form>

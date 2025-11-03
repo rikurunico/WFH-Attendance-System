@@ -32,7 +32,7 @@ export const MonthlyAttendanceReport = () => {
       }
     } catch (error) {
       console.error('Error fetching monthly attendance report:', error);
-      toast.error('Failed to fetch monthly attendance report');
+      toast.error('Gagal mengambil laporan absensi bulanan');
     } finally {
       setLoading(false);
     }
@@ -83,8 +83,8 @@ export const MonthlyAttendanceReport = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Monthly Attendance Report</h1>
-          <p className="text-gray-600 mt-1">View all employees work hours summary within date range</p>
+          <h1 className="text-3xl font-bold text-gray-900">Laporan Absensi Bulanan</h1>
+          <p className="text-gray-600 mt-1">Lihat ringkasan jam kerja semua karyawan dalam rentang tanggal</p>
         </div>
 
         {/* Date Range Filter */}
@@ -92,7 +92,7 @@ export const MonthlyAttendanceReport = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Start Date
+                Tanggal Mulai
               </label>
               <input
                 type="date"
@@ -103,7 +103,7 @@ export const MonthlyAttendanceReport = () => {
             </div>
             <div className="w-full sm:flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Date
+                Tanggal Akhir
               </label>
               <input
                 type="date"
@@ -117,7 +117,7 @@ export const MonthlyAttendanceReport = () => {
                 className="w-full sm:w-auto"
                 onClick={handleFilter}
               >
-                Apply Filter
+                Terapkan Filter
               </Button>
             </div>
           </div>
@@ -129,7 +129,7 @@ export const MonthlyAttendanceReport = () => {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Period</p>
+                  <p className="text-sm text-gray-600 mb-1">Periode</p>
                   <p className="text-lg font-bold text-gray-900">
                     {formatDate(report.start_date)} - {formatDate(report.end_date)}
                   </p>
@@ -143,7 +143,7 @@ export const MonthlyAttendanceReport = () => {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Employees</p>
+                  <p className="text-sm text-gray-600 mb-1">Total Karyawan</p>
                   <p className="text-2xl font-bold text-primary-600">{employees.length}</p>
                 </div>
                 <div className="p-3 rounded-full bg-blue-100">
@@ -155,8 +155,8 @@ export const MonthlyAttendanceReport = () => {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Required Hours/Day</p>
-                  <p className="text-2xl font-bold text-green-600">{requiredHours} hours</p>
+                  <p className="text-sm text-gray-600 mb-1">Jam Wajib/Hari</p>
+                  <p className="text-2xl font-bold text-green-600">{requiredHours} jam</p>
                 </div>
                 <div className="p-3 rounded-full bg-green-100">
                   <Clock size={24} className="text-green-600" />
@@ -181,10 +181,10 @@ export const MonthlyAttendanceReport = () => {
                       Employee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Hours
+                      Total Jam
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Overtime Hours
+                      Jam Lembur
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Days Worked
@@ -231,7 +231,7 @@ export const MonthlyAttendanceReport = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {total_days_worked} days
+                          {total_days_worked} hari
                         </td>
                       </tr>
                     );
@@ -246,7 +246,7 @@ export const MonthlyAttendanceReport = () => {
         <Modal
           isOpen={showDetailModal}
           onClose={handleCloseModal}
-          title={selectedEmployee ? `Daily Attendance Details - ${selectedEmployee.employee.name}` : ''}
+          title={selectedEmployee ? `Detail Absensi Harian - ${selectedEmployee.employee.name}` : ''}
           size="xl"
         >
           {selectedEmployee && (
@@ -255,21 +255,21 @@ export const MonthlyAttendanceReport = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Total Hours</p>
+                    <p className="text-sm text-gray-600">Total Jam</p>
                     <p className="text-lg font-bold text-gray-900">
                       {formatHours(selectedEmployee.total_hours)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Overtime Hours</p>
+                    <p className="text-sm text-gray-600">Jam Lembur</p>
                     <p className="text-lg font-bold text-orange-600">
                       {formatHours(selectedEmployee.total_overtime_hours)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Days Worked</p>
+                    <p className="text-sm text-gray-600">Hari Kerja</p>
                     <p className="text-lg font-bold text-gray-900">
-                      {selectedEmployee.total_days_worked} days
+                      {selectedEmployee.total_days_worked} hari
                     </p>
                   </div>
                 </div>
@@ -288,7 +288,7 @@ export const MonthlyAttendanceReport = () => {
                             Total: {formatHours(dailyDetail.daily_total_hours)}
                             {dailyDetail.overtime_hours > 0 && (
                               <span className="text-orange-600 ml-2">
-                                (+{formatHours(dailyDetail.overtime_hours)} overtime)
+                                (+{formatHours(dailyDetail.overtime_hours)} lembur)
                               </span>
                             )}
                           </p>
@@ -300,7 +300,7 @@ export const MonthlyAttendanceReport = () => {
                             ? 'badge-warning'
                             : 'badge-info'
                         }`}>
-                          {dailyDetail.status}
+                          {dailyDetail.status === 'complete' ? 'Lengkap' : dailyDetail.status === 'incomplete' ? 'Tidak Lengkap' : 'Lembur'}
                         </span>
                       </div>
 
@@ -317,10 +317,10 @@ export const MonthlyAttendanceReport = () => {
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center space-x-3">
                                     <p className="text-sm font-medium text-gray-700">
-                                      Session {session.session_number}
+                                      Sesi {session.session_number}
                                     </p>
                                     <p className="text-sm text-gray-600">
-                                      {formatTime(session.check_in)} - {session.check_out ? formatTime(session.check_out) : 'Active'}
+                                      {formatTime(session.check_in)} - {session.check_out ? formatTime(session.check_out) : 'Aktif'}
                                     </p>
                                   </div>
                                   <p className="text-sm text-gray-600">
@@ -336,7 +336,7 @@ export const MonthlyAttendanceReport = () => {
                                       className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors"
                                     >
                                       <CheckCircle size={14} />
-                                      <span>{session.tasks_completed} completed</span>
+                                      <span>{session.tasks_completed} selesai</span>
                                       {isTaskExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                     </button>
                                   )}
@@ -346,7 +346,7 @@ export const MonthlyAttendanceReport = () => {
                                       className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                                     >
                                       <XCircle size={14} />
-                                      <span>{session.tasks_incomplete} incomplete</span>
+                                      <span>{session.tasks_incomplete} belum selesai</span>
                                       {isTaskExp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                     </button>
                                   )}
@@ -355,7 +355,7 @@ export const MonthlyAttendanceReport = () => {
                                 {/* Expanded Task Details */}
                                 {isTaskExp && session.tasks && session.tasks.length > 0 && (
                                   <div className="mt-3 pt-3 border-t border-gray-200">
-                                    <p className="text-xs font-medium text-gray-700 mb-2">Task Details:</p>
+                                    <p className="text-xs font-medium text-gray-700 mb-2">Detail Tugas:</p>
                                     <div className="space-y-2">
                                       {session.tasks.map((task, taskIndex) => (
                                         <div
@@ -399,7 +399,7 @@ export const MonthlyAttendanceReport = () => {
                   ))
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    No attendance records for this employee in the selected period
+                    Tidak ada catatan absensi untuk karyawan ini dalam periode yang dipilih
                   </div>
                 )}
               </div>

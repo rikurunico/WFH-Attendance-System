@@ -42,7 +42,7 @@ export const Navbar = ({ onMenuClick }) => {
               className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <LogOut size={18} />
-              <span>Logout</span>
+              <span>Keluar</span>
             </button>
           </div>
         </div>

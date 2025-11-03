@@ -18,19 +18,19 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const employeeLinks = [
     { to: '/employee/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/employee/report', icon: FileText, label: 'My Report' },
-    { to: '/employee/leave', icon: Calendar, label: 'Leave Requests' },
+    { to: '/employee/report', icon: FileText, label: 'Laporan Saya' },
+    { to: '/employee/leave', icon: Calendar, label: 'Pengajuan Cuti' },
   ];
 
   const managerLinks = [
     { to: '/manager/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/manager/users', icon: Users, label: 'User Management' },
-    { to: '/manager/attendances', icon: Clock, label: 'Attendances' },
-    { to: '/manager/daily-attendance-report', icon: FileText, label: 'Daily Report' },
-    { to: '/manager/monthly-attendance-report', icon: TrendingUp, label: 'Monthly Report' },
-    { to: '/manager/leaves', icon: ClipboardList, label: 'Leave Approval' },
-    { to: '/manager/holidays', icon: Calendar, label: 'Holidays' },
-    { to: '/manager/activity-logs', icon: Activity, label: 'Activity Logs' },
+    { to: '/manager/users', icon: Users, label: 'Manajemen Pengguna' },
+    { to: '/manager/attendances', icon: Clock, label: 'Absensi' },
+    { to: '/manager/daily-attendance-report', icon: FileText, label: 'Laporan Harian' },
+    { to: '/manager/monthly-attendance-report', icon: TrendingUp, label: 'Laporan Bulanan' },
+    { to: '/manager/leaves', icon: ClipboardList, label: 'Persetujuan Cuti' },
+    { to: '/manager/holidays', icon: Calendar, label: 'Hari Libur' },
+    { to: '/manager/activity-logs', icon: Activity, label: 'Log Aktivitas' },
   ];
 
   const links = isManager ? managerLinks : employeeLinks;

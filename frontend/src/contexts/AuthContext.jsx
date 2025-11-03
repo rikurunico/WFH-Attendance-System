@@ -30,11 +30,11 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('token', token);
         
-        toast.success(response.message || 'Login successful');
+        toast.success(response.message || 'Login berhasil');
         return { success: true, user: userData };
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || 'Login gagal';
       toast.error(message);
       throw error;
     }
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('user');
       localStorage.removeItem('token');
-      toast.success('Logged out successfully');
+      toast.success('Logout berhasil');
     }
   };
 

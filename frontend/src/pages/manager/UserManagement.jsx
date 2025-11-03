@@ -122,7 +122,7 @@ export const UserManagement = () => {
         fetchUsers();
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Operation failed';
+      const message = error.response?.data?.message || 'Operasi gagal';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -161,15 +161,15 @@ export const UserManagement = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600 mt-1">Manage employee and manager accounts</p>
+            <h1 className="text-3xl font-bold text-gray-900">Manajemen Pengguna</h1>
+            <p className="text-gray-600 mt-1">Kelola akun karyawan dan manager</p>
           </div>
           <Button
             onClick={() => handleOpenModal()}
             className="flex items-center space-x-2"
           >
             <Plus size={20} />
-            <span>Add User</span>
+            <span>Tambah Pengguna</span>
           </Button>
         </div>
 
@@ -178,7 +178,7 @@ export const UserManagement = () => {
           {users.length === 0 ? (
             <div className="text-center py-12">
               <Users size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">No users found</p>
+              <p className="text-gray-600">Tidak ada pengguna ditemukan</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -186,16 +186,16 @@ export const UserManagement = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
+                      Pengguna
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
+                      Peran
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created At
+                      Dibuat Pada
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      Aksi
                     </th>
                   </tr>
                 </thead>
@@ -223,7 +223,7 @@ export const UserManagement = () => {
                         <span className={`badge ${
                           user.role === 'manager' ? 'badge-info' : 'badge-success'
                         }`}>
-                          {user.role}
+                          {user.role === 'manager' ? 'Manager' : 'Karyawan'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -256,12 +256,12 @@ export const UserManagement = () => {
       <Modal
         isOpen={showModal}
         onClose={handleCloseModal}
-        title={editingUser ? 'Edit User' : 'Add New User'}
+        title={editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}
         size="md"
       >
         <form onSubmit={handleSubmit}>
           <Input
-            label="Name"
+            label="Nama"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
@@ -277,7 +277,7 @@ export const UserManagement = () => {
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role <span className="text-red-500">*</span>
+              Peran <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.role}
@@ -285,13 +285,13 @@ export const UserManagement = () => {
               className="input-field"
               required
             >
-              <option value="employee">Employee</option>
+              <option value="employee">Karyawan</option>
               <option value="manager">Manager</option>
             </select>
           </div>
 
           <Input
-            label={editingUser ? 'Password (leave blank to keep current)' : 'Password'}
+            label={editingUser ? 'Kata Sandi (kosongkan jika tidak diubah)' : 'Kata Sandi'}
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -299,7 +299,7 @@ export const UserManagement = () => {
           />
 
           <Input
-            label="Confirm Password"
+            label="Konfirmasi Kata Sandi"
             type="password"
             value={formData.password_confirmation}
             onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
@@ -312,10 +312,10 @@ export const UserManagement = () => {
               variant="secondary"
               onClick={handleCloseModal}
             >
-              Cancel
+              Batal
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? 'Saving...' : editingUser ? 'Update User' : 'Create User'}
+              {submitting ? 'Menyimpan...' : editingUser ? 'Perbarui Pengguna' : 'Buat Pengguna'}
             </Button>
           </div>
         </form>

@@ -25,10 +25,18 @@ class ActivityLogController extends Controller
             $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
             $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
 
-            $activityType = $action ? ActivityType::from($action) : null;
+            $activityType = null;
+            if ($action) {
+                try {
+                    $activityType = ActivityType::from($action);
+                } catch (\ValueError $e) {
+                    // Invalid action type, ignore it
+                    Log::warning('Invalid activity type: ' . $action);
+                }
+            }
 
             $logs = $this->activityLogRepository->getWithFilters(
-                $userId,
+                $userId ? (int)$userId : null,
                 $activityType,
                 $startDate,
                 $endDate,
@@ -38,7 +46,7 @@ class ActivityLogController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'logs' => ActivityLogResource::collection($logs->load('user')),
+                    'logs' => ActivityLogResource::collection($logs),
                 ],
             ], 200);
         } catch (\Exception $e) {
@@ -46,7 +54,7 @@ class ActivityLogController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get activity logs',
+                'message' => 'Gagal mengambil log aktivitas',
             ], 500);
         }
     }

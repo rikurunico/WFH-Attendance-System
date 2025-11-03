@@ -52,8 +52,8 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
     return (
       <Modal isOpen={isOpen} onClose={onClose} title="Check Out" size="lg">
         <div className="text-center py-8">
-          <p className="text-gray-600">No tasks found for this session.</p>
-          <p className="text-sm text-gray-500 mt-2">Please refresh the page and try again.</p>
+          <p className="text-gray-600">Tidak ada tugas ditemukan untuk sesi ini.</p>
+          <p className="text-sm text-gray-500 mt-2">Harap refresh halaman dan coba lagi.</p>
         </div>
       </Modal>
     );
@@ -64,7 +64,7 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-4">
-            Mark your task completion status and provide reasons for incomplete tasks
+            Tandai status penyelesaian tugas Anda dan berikan alasan untuk tugas yang belum selesai
           </p>
 
           <div className="space-y-4">
@@ -85,10 +85,10 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
                 {taskStatuses[index] && !taskStatuses[index].is_completed && (
                   <div className="ml-8">
                     <Input
-                      label="Blocker Reason"
+                      label="Alasan Blocker"
                       value={taskStatuses[index].blocker_reason}
                       onChange={(e) => updateTaskStatus(index, 'blocker_reason', e.target.value)}
-                      placeholder="Why couldn't you complete this task?"
+                      placeholder="Mengapa Anda tidak bisa menyelesaikan tugas ini?"
                       required={!taskStatuses[index].is_completed}
                     />
                   </div>
@@ -100,13 +100,14 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
 
         <div className="flex justify-end space-x-3">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Batal
           </Button>
           <Button type="submit" disabled={loading || taskStatuses.length === 0}>
-            {loading ? 'Checking Out...' : 'Check Out'}
+            {loading ? 'Check Out...' : 'Check Out'}
           </Button>
         </div>
       </form>
     </Modal>
   );
 };
+;

@@ -51,7 +51,7 @@ export const EmployeeDashboard = () => {
         fetchTodayStatus();
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to check in';
+      const message = error.response?.data?.message || 'Gagal melakukan check in';
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -135,9 +135,9 @@ export const EmployeeDashboard = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Current Status</p>
+                <p className="text-sm text-gray-600 mb-1">Status Saat Ini</p>
                 <p className={`text-2xl font-bold ${isCheckedIn ? 'text-green-600' : 'text-gray-400'}`}>
-                  {isCheckedIn ? 'Checked In' : 'Checked Out'}
+                  {isCheckedIn ? 'Sudah Check In' : 'Belum Check In'}
                 </p>
               </div>
               <div className={`p-3 rounded-full ${isCheckedIn ? 'bg-green-100' : 'bg-gray-100'}`}>
@@ -146,11 +146,11 @@ export const EmployeeDashboard = () => {
             </div>
           </Card>
 
-          {/* Today's Hours */}
+          {/* Jam Kerja Hari Ini */}
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Today's Hours</p>
+                <p className="text-sm text-gray-600 mb-1">Jam Kerja Hari Ini</p>
                 <p className="text-2xl font-bold text-primary-600">
                   {formatHours(todayTotalHours)}
                 </p>
@@ -161,11 +161,11 @@ export const EmployeeDashboard = () => {
             </div>
           </Card>
 
-          {/* Remaining Hours */}
+          {/* Jam Tersisa */}
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Remaining Hours</p>
+                <p className="text-sm text-gray-600 mb-1">Jam Tersisa</p>
                 <p className={`text-2xl font-bold ${remainingHours > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                   {formatHours(remainingHours)}
                 </p>
@@ -178,11 +178,11 @@ export const EmployeeDashboard = () => {
         </div>
 
         {/* Progress Bar */}
-        <Card title="Today's Progress">
+        <Card title="Progress Hari Ini">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
-              <span>{formatHours(todayTotalHours)} worked</span>
-              <span>{requiredHours} hours required</span>
+              <span>{formatHours(todayTotalHours)} sudah bekerja</span>
+              <span>{requiredHours} jam wajib</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4">
               <div
@@ -194,23 +194,23 @@ export const EmployeeDashboard = () => {
             </div>
             <p className="text-sm text-gray-600 text-center">
               {progressPercentage >= 100 
-                ? '✓ Daily requirement completed!' 
-                : `${progressPercentage.toFixed(0)}% completed`}
+                ? '✓ Target harian tercapai!' 
+                : `${progressPercentage.toFixed(0)}% selesai`}
             </p>
           </div>
         </Card>
 
         {/* Current Session */}
         {isCheckedIn && currentSession && (
-          <Card title="Current Session">
+          <Card title="Sesi Saat Ini">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Check-in Time</p>
+                  <p className="text-sm text-gray-600">Waktu Check In</p>
                   <p className="text-lg font-semibold">{formatTime(currentSession.check_in)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Elapsed Time</p>
+                  <p className="text-sm text-gray-600">Waktu Berlalu</p>
                   <p className="text-lg font-semibold text-primary-600">
                     {formatHours(currentSession.elapsed_hours)}
                   </p>
@@ -219,7 +219,7 @@ export const EmployeeDashboard = () => {
 
               {currentSession.tasks && currentSession.tasks.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Today's Tasks:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Tugas Hari Ini:</p>
                   <ul className="space-y-2">
                     {currentSession.tasks.map((task, index) => (
                       <li key={index} className="flex items-start space-x-2">
@@ -236,7 +236,7 @@ export const EmployeeDashboard = () => {
 
         {/* Previous Sessions Today */}
         {todayStatus?.previous_sessions && todayStatus.previous_sessions.length > 0 && (
-          <Card title="Previous Sessions Today">
+          <Card title="Sesi Sebelumnya Hari Ini">
             <div className="space-y-3">
               {todayStatus.previous_sessions.map((session, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

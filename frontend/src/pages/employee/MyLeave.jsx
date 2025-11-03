@@ -36,7 +36,7 @@ export const MyLeave = () => {
       }
     } catch (error) {
       console.error('Error fetching leaves:', error);
-      toast.error('Failed to fetch leave requests');
+      toast.error('Gagal mengambil pengajuan cuti');
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export const MyLeave = () => {
     e.preventDefault();
     
     if (formData.reason.length < 10) {
-      toast.error('Reason must be at least 10 characters');
+      toast.error('Alasan harus minimal 10 karakter');
       return;
     }
 
@@ -101,15 +101,15 @@ export const MyLeave = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Leave Requests</h1>
-            <p className="text-gray-600 mt-1">Manage your leave requests</p>
+            <h1 className="text-3xl font-bold text-gray-900">Pengajuan Cuti</h1>
+            <p className="text-gray-600 mt-1">Kelola pengajuan cuti Anda</p>
           </div>
           <Button
             onClick={() => setShowModal(true)}
             className="flex items-center space-x-2"
           >
             <Plus size={20} />
-            <span>Request Leave</span>
+            <span>Ajukan Cuti</span>
           </Button>
         </div>
 
@@ -118,13 +118,13 @@ export const MyLeave = () => {
           {leaves.length === 0 ? (
             <div className="text-center py-12">
               <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">No leave requests yet</p>
+              <p className="text-gray-600">Belum ada pengajuan cuti</p>
               <Button
                 onClick={() => setShowModal(true)}
                 variant="outline"
                 className="mt-4"
               >
-                Request Your First Leave
+                Ajukan Cuti Pertama Anda
               </Button>
             </div>
           ) : (
@@ -142,23 +142,23 @@ export const MyLeave = () => {
                           {formatDate(leave.start_date)} - {formatDate(leave.end_date)}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
-                          Requested on {formatDate(leave.requested_at)}
+                          Diajukan pada {formatDate(leave.requested_at)}
                         </p>
                       </div>
                     </div>
                     <span className={`badge ${getStatusBadge(leave.status)}`}>
-                      {leave.status}
+                      {leave.status === 'pending' ? 'Menunggu' : leave.status === 'approved' ? 'Disetujui' : 'Ditolak'}
                     </span>
                   </div>
 
                   <div className="bg-gray-50 rounded p-3 mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Reason:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-1">Alasan:</p>
                     <p className="text-sm text-gray-600">{leave.reason}</p>
                   </div>
 
                   {leave.notes && (
                     <div className="bg-blue-50 rounded p-3">
-                      <p className="text-sm font-medium text-blue-700 mb-1">Manager's Notes:</p>
+                      <p className="text-sm font-medium text-blue-700 mb-1">Catatan Manager:</p>
                       <p className="text-sm text-blue-600">{leave.notes}</p>
                     </div>
                   )}
@@ -173,12 +173,12 @@ export const MyLeave = () => {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="Request Leave"
+        title="Ajukan Cuti"
         size="md"
       >
         <form onSubmit={handleSubmit}>
           <Input
-            label="Start Date"
+            label="Tanggal Mulai"
             type="date"
             value={formData.start_date}
             onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
@@ -187,7 +187,7 @@ export const MyLeave = () => {
           />
 
           <Input
-            label="End Date"
+            label="Tanggal Akhir"
             type="date"
             value={formData.end_date}
             onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
@@ -197,20 +197,20 @@ export const MyLeave = () => {
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reason <span className="text-red-500">*</span>
+              Alasan <span className="text-red-500">*</span>
             </label>
             <textarea
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               className="input-field"
               rows="4"
-              placeholder="Please provide a reason for your leave (minimum 10 characters)"
+              placeholder="Harap berikan alasan untuk cuti Anda (minimal 10 karakter)"
               required
               minLength={10}
               maxLength={500}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.reason.length}/500 characters (minimum 10)
+              {formData.reason.length}/500 karakter (minimal 10)
             </p>
           </div>
 
@@ -220,10 +220,10 @@ export const MyLeave = () => {
               variant="secondary"
               onClick={() => setShowModal(false)}
             >
-              Cancel
+              Batal
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit Request'}
+              {submitting ? 'Mengirim...' : 'Kirim Pengajuan'}
             </Button>
           </div>
         </form>

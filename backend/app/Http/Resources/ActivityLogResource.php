@@ -16,12 +16,12 @@ class ActivityLogResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user' => new UserResource($this->whenLoaded('user')),
-            'action' => $this->action->value,
-            'description' => $this->description,
-            'ip_address' => $this->ip_address,
-            'user_agent' => $this->user_agent,
-            'created_at' => $this->created_at->toIso8601String(),
+            'user' => $this->whenLoaded('user') ? new UserResource($this->user) : null,
+            'action' => $this->action instanceof \App\Enums\ActivityType ? $this->action->value : (string)$this->action,
+            'description' => $this->description ?? '',
+            'ip_address' => $this->ip_address ?? null,
+            'user_agent' => $this->user_agent ?? null,
+            'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
         ];
     }
 }
