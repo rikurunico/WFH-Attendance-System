@@ -23,9 +23,15 @@ class UserRequest extends FormRequest
     {
         $userId = $this->route('id');
         
+        // Build unique rule: exclude current user ID only when updating
+        $emailRule = 'required|email|unique:users,email';
+        if ($userId !== null) {
+            $emailRule .= ',' . $userId;
+        }
+        
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $userId,
+            'email' => $emailRule,
             'password' => $this->isMethod('post') ? 'required|min:8|confirmed' : 'sometimes|min:8|confirmed',
             'role' => 'required|in:manager,employee',
         ];

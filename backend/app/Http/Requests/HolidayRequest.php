@@ -23,8 +23,14 @@ class HolidayRequest extends FormRequest
     {
         $holidayId = $this->route('id');
         
+        // Build unique rule: exclude current holiday ID only when updating
+        $dateRule = 'required|date|unique:holidays,date';
+        if ($holidayId !== null) {
+            $dateRule .= ',' . $holidayId;
+        }
+        
         return [
-            'date' => 'required|date|unique:holidays,date,' . $holidayId,
+            'date' => $dateRule,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
         ];
