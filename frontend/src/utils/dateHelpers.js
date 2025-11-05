@@ -58,3 +58,28 @@ export const getMonthEnd = () => {
   const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
   return format(lastDay, 'yyyy-MM-dd');
 };
+
+/**
+ * Format datetime for datetime-local input
+ * Extracts datetime from ISO string WITHOUT timezone conversion
+ * This ensures the input shows the exact same time as displayed in the table
+ * 
+ * Example: "2025-11-03T17:54:00+07:00" -> "2025-11-03T17:54"
+ */
+export const formatDateTimeForInput = (date) => {
+  if (!date) return '';
+  try {
+    // Extract datetime part from ISO string (before timezone offset)
+    // Format: "YYYY-MM-DDTHH:mm:ss+07:00" -> "YYYY-MM-DDTHH:mm"
+    const match = date.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+    if (match) {
+      return match[1]; // Returns "YYYY-MM-DDTHH:mm"
+    }
+    
+    // Fallback: if no timezone info, just slice
+    return date.slice(0, 16);
+  } catch (error) {
+    console.error('Error formatting datetime for input:', date, error);
+    return '';
+  }
+};

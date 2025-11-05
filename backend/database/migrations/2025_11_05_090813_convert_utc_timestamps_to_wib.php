@@ -16,64 +16,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 7 hours (25200 seconds) to convert UTC to WIB
-        $offset = 7 * 3600; // 7 hours in seconds
+        $driver = DB::connection()->getDriverName();
 
         // Update attendances table
-        DB::statement("
-            UPDATE attendances 
-            SET 
-                check_in = datetime(check_in, '+7 hours'),
-                check_out = CASE 
-                    WHEN check_out IS NOT NULL THEN datetime(check_out, '+7 hours')
-                    ELSE NULL 
-                END,
-                created_at = datetime(created_at, '+7 hours'),
-                updated_at = datetime(updated_at, '+7 hours')
-        ");
+        $this->updateAttendances($driver, '+');
 
         // Update leaves table
-        DB::statement("
-            UPDATE leaves 
-            SET 
-                created_at = datetime(created_at, '+7 hours'),
-                updated_at = datetime(updated_at, '+7 hours')
-        ");
+        $this->updateLeaves($driver, '+');
 
         // Update activity_logs table (no updated_at column)
-        DB::statement("
-            UPDATE activity_logs 
-            SET 
-                created_at = datetime(created_at, '+7 hours')
-        ");
+        $this->updateActivityLogs($driver, '+');
 
         // Update users table
-        DB::statement("
-            UPDATE users 
-            SET 
-                email_verified_at = CASE 
-                    WHEN email_verified_at IS NOT NULL THEN datetime(email_verified_at, '+7 hours')
-                    ELSE NULL 
-                END,
-                created_at = datetime(created_at, '+7 hours'),
-                updated_at = datetime(updated_at, '+7 hours')
-        ");
+        $this->updateUsers($driver, '+');
 
         // Update holidays table
-        DB::statement("
-            UPDATE holidays 
-            SET 
-                created_at = datetime(created_at, '+7 hours'),
-                updated_at = datetime(updated_at, '+7 hours')
-        ");
+        $this->updateHolidays($driver, '+');
 
         // Update tasks table
-        DB::statement("
-            UPDATE tasks 
-            SET 
-                created_at = datetime(created_at, '+7 hours'),
-                updated_at = datetime(updated_at, '+7 hours')
-        ");
+        $this->updateTasks($driver, '+');
     }
 
     /**
@@ -83,62 +44,117 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Subtract 7 hours to convert WIB back to UTC
-        
-        // Revert attendances table
+        $driver = DB::connection()->getDriverName();
+
+        // Revert all tables
+        $this->updateAttendances($driver, '-');
+        $this->updateLeaves($driver, '-');
+        $this->updateActivityLogs($driver, '-');
+        $this->updateUsers($driver, '-');
+        $this->updateHolidays($driver, '-');
+        $this->updateTasks($driver, '-');
+    }
+
+    /**
+     * Get the SQL expression for adding/subtracting hours based on database driver
+     */
+    private function getDateAddExpression(string $driver, string $column, string $operation): string
+    {
+        $hours = $operation === '+' ? 7 : -7;
+
+        return match ($driver) {
+            'pgsql' => "{$column} + INTERVAL '{$hours} hours'",
+            'mysql' => "DATE_ADD({$column}, INTERVAL {$hours} HOUR)",
+            'sqlite' => "datetime({$column}, '{$operation}7 hours')",
+            default => throw new \Exception("Unsupported database driver: {$driver}"),
+        };
+    }
+
+    private function updateAttendances(string $driver, string $operation): void
+    {
+        $checkInExpr = $this->getDateAddExpression($driver, 'check_in', $operation);
+        $checkOutExpr = $this->getDateAddExpression($driver, 'check_out', $operation);
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+        $updatedAtExpr = $this->getDateAddExpression($driver, 'updated_at', $operation);
+
         DB::statement("
             UPDATE attendances 
             SET 
-                check_in = datetime(check_in, '-7 hours'),
+                check_in = {$checkInExpr},
                 check_out = CASE 
-                    WHEN check_out IS NOT NULL THEN datetime(check_out, '-7 hours')
+                    WHEN check_out IS NOT NULL THEN {$checkOutExpr}
                     ELSE NULL 
                 END,
-                created_at = datetime(created_at, '-7 hours'),
-                updated_at = datetime(updated_at, '-7 hours')
+                created_at = {$createdAtExpr},
+                updated_at = {$updatedAtExpr}
         ");
+    }
 
-        // Revert leaves table
+    private function updateLeaves(string $driver, string $operation): void
+    {
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+        $updatedAtExpr = $this->getDateAddExpression($driver, 'updated_at', $operation);
+
         DB::statement("
             UPDATE leaves 
             SET 
-                created_at = datetime(created_at, '-7 hours'),
-                updated_at = datetime(updated_at, '-7 hours')
+                created_at = {$createdAtExpr},
+                updated_at = {$updatedAtExpr}
         ");
+    }
 
-        // Revert activity_logs table (no updated_at column)
+    private function updateActivityLogs(string $driver, string $operation): void
+    {
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+
         DB::statement("
             UPDATE activity_logs 
             SET 
-                created_at = datetime(created_at, '-7 hours')
+                created_at = {$createdAtExpr}
         ");
+    }
 
-        // Revert users table
+    private function updateUsers(string $driver, string $operation): void
+    {
+        $emailVerifiedAtExpr = $this->getDateAddExpression($driver, 'email_verified_at', $operation);
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+        $updatedAtExpr = $this->getDateAddExpression($driver, 'updated_at', $operation);
+
         DB::statement("
             UPDATE users 
             SET 
                 email_verified_at = CASE 
-                    WHEN email_verified_at IS NOT NULL THEN datetime(email_verified_at, '-7 hours')
+                    WHEN email_verified_at IS NOT NULL THEN {$emailVerifiedAtExpr}
                     ELSE NULL 
                 END,
-                created_at = datetime(created_at, '-7 hours'),
-                updated_at = datetime(updated_at, '-7 hours')
+                created_at = {$createdAtExpr},
+                updated_at = {$updatedAtExpr}
         ");
+    }
 
-        // Revert holidays table
+    private function updateHolidays(string $driver, string $operation): void
+    {
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+        $updatedAtExpr = $this->getDateAddExpression($driver, 'updated_at', $operation);
+
         DB::statement("
             UPDATE holidays 
             SET 
-                created_at = datetime(created_at, '-7 hours'),
-                updated_at = datetime(updated_at, '-7 hours')
+                created_at = {$createdAtExpr},
+                updated_at = {$updatedAtExpr}
         ");
+    }
 
-        // Revert tasks table
+    private function updateTasks(string $driver, string $operation): void
+    {
+        $createdAtExpr = $this->getDateAddExpression($driver, 'created_at', $operation);
+        $updatedAtExpr = $this->getDateAddExpression($driver, 'updated_at', $operation);
+
         DB::statement("
             UPDATE tasks 
             SET 
-                created_at = datetime(created_at, '-7 hours'),
-                updated_at = datetime(updated_at, '-7 hours')
+                created_at = {$createdAtExpr},
+                updated_at = {$updatedAtExpr}
         ");
     }
 };

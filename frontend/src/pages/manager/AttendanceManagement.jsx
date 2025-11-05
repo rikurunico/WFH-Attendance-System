@@ -6,7 +6,7 @@ import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { getAllAttendances, editAttendance, deleteAttendance } from '../../api/manager.api';
-import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
+import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd, formatDateTimeForInput } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Clock, Edit, Trash2, Calendar, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -57,8 +57,8 @@ export const AttendanceManagement = () => {
   const handleOpenEditModal = (attendance) => {
     setEditingAttendance(attendance);
     setEditFormData({
-      check_in: attendance.check_in ? new Date(attendance.check_in).toISOString().slice(0, 16) : '',
-      check_out: attendance.check_out ? new Date(attendance.check_out).toISOString().slice(0, 16) : '',
+      check_in: attendance.check_in ? formatDateTimeForInput(attendance.check_in) : '',
+      check_out: attendance.check_out ? formatDateTimeForInput(attendance.check_out) : '',
       reason: '',
     });
     setShowEditModal(true);
