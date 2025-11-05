@@ -38,6 +38,12 @@ class UserRepository
     public function create(array $data): User
     {
         $data['password'] = Hash::make($data['password']);
+        
+        // Set default leave quota if not provided
+        if (!isset($data['leave_quota_days'])) {
+            $data['leave_quota_days'] = config('attendance.default_leave_quota_days', 12);
+        }
+        
         return User::create($data);
     }
 

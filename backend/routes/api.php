@@ -53,6 +53,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(fu
     Route::prefix('leaves')->middleware('role:employee')->group(function () {
         Route::post('/', [LeaveController::class, 'store']);
         Route::get('/my-requests', [LeaveController::class, 'myRequests']);
+        Route::get('/summary', [LeaveController::class, 'summary']);
     });
 
     // Holidays (Both roles can view)

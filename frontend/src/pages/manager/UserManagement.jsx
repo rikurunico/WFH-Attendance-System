@@ -25,6 +25,7 @@ export const UserManagement = () => {
     password: '',
     password_confirmation: '',
     role: 'employee',
+    leave_quota_days: 12,
   });
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export const UserManagement = () => {
         password: '',
         password_confirmation: '',
         role: user.role,
+        leave_quota_days: user.leave_quota_days || 12,
       });
     } else {
       setEditingUser(null);
@@ -65,6 +67,7 @@ export const UserManagement = () => {
         password: '',
         password_confirmation: '',
         role: 'employee',
+        leave_quota_days: 12,
       });
     }
     setShowModal(true);
@@ -79,6 +82,7 @@ export const UserManagement = () => {
       password: '',
       password_confirmation: '',
       role: 'employee',
+      leave_quota_days: 12,
     });
   };
 
@@ -103,6 +107,7 @@ export const UserManagement = () => {
         name: formData.name,
         email: formData.email,
         role: formData.role,
+        leave_quota_days: parseInt(formData.leave_quota_days) || 12,
       };
 
       // Only include password if it's provided
@@ -194,6 +199,9 @@ export const UserManagement = () => {
                       Peran
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Jatah Cuti
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Dibuat Pada
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -226,6 +234,11 @@ export const UserManagement = () => {
                           user.role === 'manager' ? 'badge-info' : 'badge-success'
                         }`}>
                           {user.role === 'manager' ? 'Manager' : 'Karyawan'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-900">
+                          {user.leave_quota_days || 12} hari
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -291,6 +304,17 @@ export const UserManagement = () => {
               <option value="manager">Manager</option>
             </select>
           </div>
+
+          <Input
+            label="Jatah Cuti Tahunan (hari)"
+            type="number"
+            value={formData.leave_quota_days}
+            onChange={(e) => setFormData({ ...formData, leave_quota_days: e.target.value })}
+            required
+            min="0"
+            max="365"
+            helperText="Jumlah hari cuti yang dapat diambil karyawan dalam setahun"
+          />
 
           <Input
             label={editingUser ? 'Kata Sandi (kosongkan jika tidak diubah)' : 'Kata Sandi'}

@@ -14,12 +14,17 @@ class LeaveResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $startDate = \Carbon\Carbon::parse($this->start_date);
+        $endDate = \Carbon\Carbon::parse($this->end_date);
+        $days = $startDate->diffInDays($endDate) + 1;
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
             'user' => new UserResource($this->whenLoaded('user')),
             'start_date' => $this->start_date->format('Y-m-d'),
             'end_date' => $this->end_date->format('Y-m-d'),
+            'days' => $days,
             'reason' => $this->reason,
             'status' => $this->status->value,
             'approved_by' => $this->approved_by,

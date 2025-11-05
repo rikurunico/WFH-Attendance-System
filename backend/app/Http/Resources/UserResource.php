@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role->value,
+            'leave_quota_days' => $this->leave_quota_days,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

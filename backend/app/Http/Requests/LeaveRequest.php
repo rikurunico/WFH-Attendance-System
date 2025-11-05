@@ -31,13 +31,13 @@ class LeaveRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'start_date.required' => 'Start date is required.',
-            'start_date.after_or_equal' => 'Start date must be today or a future date.',
-            'end_date.required' => 'End date is required.',
-            'end_date.after_or_equal' => 'End date must be greater than or equal to start date.',
-            'reason.required' => 'Reason is required.',
-            'reason.min' => 'Reason must be at least 10 characters.',
-            'reason.max' => 'Reason cannot exceed 500 characters.',
+            'start_date.required' => 'Tanggal mulai harus diisi.',
+            'start_date.after_or_equal' => 'Tanggal mulai harus hari ini atau tanggal yang akan datang.',
+            'end_date.required' => 'Tanggal selesai harus diisi.',
+            'end_date.after_or_equal' => 'Tanggal selesai harus sama dengan atau setelah tanggal mulai.',
+            'reason.required' => 'Alasan cuti harus diisi.',
+            'reason.min' => 'Alasan cuti minimal 10 karakter.',
+            'reason.max' => 'Alasan cuti maksimal 500 karakter.',
         ];
     }
 }

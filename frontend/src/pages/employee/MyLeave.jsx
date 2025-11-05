@@ -5,16 +5,17 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
-import { requestLeave, getMyLeaveRequests } from '../../api/leave.api';
+import { requestLeave, getMyLeaveRequests, getLeaveSummary } from '../../api/leave.api';
 import { formatDate } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { Calendar, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Plus, Clock, CheckCircle, XCircle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const MyLeave = () => {
   usePageTitle('Pengajuan Cuti');
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
@@ -26,6 +27,7 @@ export const MyLeave = () => {
 
   useEffect(() => {
     fetchLeaves();
+    fetchLeaveSummary();
   }, []);
 
   const fetchLeaves = async () => {
@@ -41,6 +43,17 @@ export const MyLeave = () => {
       toast.error('Gagal mengambil pengajuan cuti');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLeaveSummary = async () => {
+    try {
+      const response = await getLeaveSummary();
+      if (response.success) {
+        setLeaveSummary(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching leave summary:', error);
     }
   };
 
@@ -65,6 +78,7 @@ export const MyLeave = () => {
         setShowModal(false);
         setFormData({ start_date: '', end_date: '', reason: '' });
         fetchLeaves();
+        fetchLeaveSummary();
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to request leave';
@@ -114,6 +128,45 @@ export const MyLeave = () => {
             <span>Ajukan Cuti</span>
           </Button>
         </div>
+
+        {/* Leave Quota Summary */}
+        {leaveSummary && (
+          <Card>
+            <div className="flex items-start space-x-3 mb-4">
+              <Info className="text-blue-600 mt-1" size={20} />
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-3">Informasi Jatah Cuti Tahun {leaveSummary.year}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <p className="text-xs text-blue-600 font-medium mb-1">Total Jatah</p>
+                    <p className="text-2xl font-bold text-blue-700">{leaveSummary.total_quota}</p>
+                    <p className="text-xs text-blue-600">hari</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <p className="text-xs text-green-600 font-medium mb-1">Terpakai</p>
+                    <p className="text-2xl font-bold text-green-700">{leaveSummary.used_days}</p>
+                    <p className="text-xs text-green-600">hari</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-3">
+                    <p className="text-xs text-yellow-600 font-medium mb-1">Menunggu</p>
+                    <p className="text-2xl font-bold text-yellow-700">{leaveSummary.pending_days}</p>
+                    <p className="text-xs text-yellow-600">hari</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-3">
+                    <p className="text-xs text-purple-600 font-medium mb-1">Sisa</p>
+                    <p className="text-2xl font-bold text-purple-700">{leaveSummary.remaining_days}</p>
+                    <p className="text-xs text-purple-600">hari</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Max/Bulan</p>
+                    <p className="text-2xl font-bold text-gray-700">{leaveSummary.max_per_month}</p>
+                    <p className="text-xs text-gray-600">hari</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Leave Requests List */}
         <Card>

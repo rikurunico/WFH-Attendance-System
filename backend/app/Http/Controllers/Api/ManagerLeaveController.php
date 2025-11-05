@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\LeaveStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LeaveResource;
 use App\Models\Leave;
-use Carbon\Carbon;
+use App\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ManagerLeaveController extends Controller
 {
+    public function __construct(
+        private LeaveService $leaveService
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         try {
@@ -45,16 +48,16 @@ class ManagerLeaveController extends Controller
             $leave = Leave::findOrFail($id);
             $manager = auth()->user();
 
-            $leave->update([
-                'status' => LeaveStatus::APPROVED,
-                'approved_by' => $manager->id,
-                'approved_at' => Carbon::now(),
-                'notes' => $request->input('notes'),
-            ]);
+            $leave = $this->leaveService->approveLeave(
+                $leave,
+                $manager,
+                $request->input('notes'),
+                $request
+            );
 
             return response()->json([
                 'success' => true,
-                'data' => new LeaveResource($leave->load(['user', 'approver'])),
+                'data' => new LeaveResource($leave),
                 'message' => 'Leave request approved',
             ], 200);
         } catch (\Exception $e) {
@@ -73,16 +76,16 @@ class ManagerLeaveController extends Controller
             $leave = Leave::findOrFail($id);
             $manager = auth()->user();
 
-            $leave->update([
-                'status' => LeaveStatus::REJECTED,
-                'approved_by' => $manager->id,
-                'approved_at' => Carbon::now(),
-                'notes' => $request->input('notes'),
-            ]);
+            $leave = $this->leaveService->rejectLeave(
+                $leave,
+                $manager,
+                $request->input('notes'),
+                $request
+            );
 
             return response()->json([
                 'success' => true,
-                'data' => new LeaveResource($leave->load(['user', 'approver'])),
+                'data' => new LeaveResource($leave),
                 'message' => 'Leave request rejected',
             ], 200);
         } catch (\Exception $e) {

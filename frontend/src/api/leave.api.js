@@ -13,3 +13,9 @@ export const getMyLeaveRequests = async () => {
   const response = await apiClient.get('/leaves/my-requests');
   return response.data;
 };
+
+export const getLeaveSummary = async (year = null) => {
+  const params = year ? { year } : {};
+  const response = await apiClient.get('/leaves/summary', { params });
+  return response.data;
+};

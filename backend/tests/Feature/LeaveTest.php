@@ -25,6 +25,7 @@ class LeaveTest extends TestCase
             'email' => 'employee@example.com',
             'password' => Hash::make('password123'),
             'role' => UserRole::EMPLOYEE,
+            'leave_quota_days' => 12,
         ]);
     }
 
@@ -167,5 +168,173 @@ class LeaveTest extends TestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    public function test_employee_cannot_exceed_annual_leave_quota(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        // Use future dates that are definitely in the same year
+        $baseDate = Carbon::now()->addDays(30); // Start 30 days from now
+        
+        // Create approved leaves that use up 10 days out of 12 in the SAME YEAR
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => $baseDate->copy(),
+            'end_date' => $baseDate->copy()->addDays(4), // 5 days
+            'status' => LeaveStatus::APPROVED,
+        ]);
+
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => $baseDate->copy()->addDays(20),
+            'end_date' => $baseDate->copy()->addDays(24), // 5 days
+            'status' => LeaveStatus::APPROVED,
+        ]);
+
+        // Try to request 5 more days (total would be 15, exceeding quota of 12)
+        $response = $this->postJson('/api/v1/leaves', [
+            'start_date' => $baseDate->copy()->addDays(40)->format('Y-m-d'),
+            'end_date' => $baseDate->copy()->addDays(44)->format('Y-m-d'),
+            'reason' => 'This should exceed the annual quota of 12 days',
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+        
+        $this->assertStringContainsString('Jatah cuti tidak mencukupi', $response->json('message'));
+    }
+
+    public function test_employee_cannot_exceed_monthly_leave_limit(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        // Create approved leave for 3 days in next month
+        $nextMonth = Carbon::now()->addMonth()->startOfMonth();
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => $nextMonth->copy()->addDays(1),
+            'end_date' => $nextMonth->copy()->addDays(3),
+            'status' => LeaveStatus::APPROVED,
+        ]);
+
+        // Try to request 5 more days in the same month (would exceed monthly limit of 5)
+        $response = $this->postJson('/api/v1/leaves', [
+            'start_date' => $nextMonth->copy()->addDays(10)->format('Y-m-d'),
+            'end_date' => $nextMonth->copy()->addDays(14)->format('Y-m-d'),
+            'reason' => 'This should exceed the monthly limit of 5 days per month',
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+        
+        $this->assertStringContainsString('Batas cuti bulanan terlampaui', $response->json('message'));
+    }
+
+    public function test_employee_cannot_request_overlapping_leave(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        // Create existing leave - use a far future date and keep it minimal
+        $startDate = Carbon::now()->addMonths(8)->startOfMonth()->addDays(15);
+        $endDate = $startDate->copy(); // Only 1 day
+        
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'status' => LeaveStatus::APPROVED,
+        ]);
+
+        // Try to request overlapping leave (exact same day) - keep it minimal
+        $response = $this->postJson('/api/v1/leaves', [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $startDate->format('Y-m-d'),
+            'reason' => 'This should overlap with existing leave',
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+        
+        $this->assertStringContainsString('sudah memiliki pengajuan cuti', $response->json('message'));
+    }
+
+    public function test_employee_can_view_leave_summary(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        // Create some leaves
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => Carbon::now()->startOfYear()->addDays(10),
+            'end_date' => Carbon::now()->startOfYear()->addDays(12),
+            'status' => LeaveStatus::APPROVED,
+        ]);
+
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => Carbon::now()->startOfYear()->addDays(20),
+            'end_date' => Carbon::now()->startOfYear()->addDays(21),
+            'status' => LeaveStatus::PENDING,
+        ]);
+
+        $response = $this->getJson('/api/v1/leaves/summary', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'year',
+                    'total_quota',
+                    'used_days',
+                    'pending_days',
+                    'remaining_days',
+                    'max_per_month',
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'total_quota' => 12,
+                    'used_days' => 3,
+                    'pending_days' => 2,
+                    'remaining_days' => 7,
+                ],
+            ]);
+    }
+
+    public function test_pending_leaves_count_toward_quota(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        // Create pending leave for 10 days
+        Leave::factory()->create([
+            'user_id' => $this->employee->id,
+            'start_date' => Carbon::now()->addMonths(1)->startOfMonth(),
+            'end_date' => Carbon::now()->addMonths(1)->startOfMonth()->addDays(9),
+            'status' => LeaveStatus::PENDING,
+        ]);
+
+        // Try to request 5 more days (would exceed quota of 12)
+        $response = $this->postJson('/api/v1/leaves', [
+            'start_date' => Carbon::now()->addMonths(2)->startOfMonth()->format('Y-m-d'),
+            'end_date' => Carbon::now()->addMonths(2)->startOfMonth()->addDays(4)->format('Y-m-d'),
+            'reason' => 'This should exceed quota when including pending leaves',
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson(['success' => false]);
+        
+        $this->assertStringContainsString('Jatah cuti tidak mencukupi', $response->json('message'));
     }
 }

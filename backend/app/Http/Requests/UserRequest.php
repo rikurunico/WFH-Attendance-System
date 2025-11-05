@@ -34,6 +34,7 @@ class UserRequest extends FormRequest
             'email' => $emailRule,
             'password' => $this->isMethod('post') ? 'required|min:8|confirmed' : 'sometimes|min:8|confirmed',
             'role' => 'required|in:manager,employee',
+            'leave_quota_days' => 'sometimes|integer|min:0|max:365',
         ];
     }
 }

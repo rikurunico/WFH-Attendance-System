@@ -537,6 +537,13 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
 - `end_date`: required, date, must be >= start_date
 - `reason`: required, string, minimum 10 characters, maximum 500 characters
 
+**Business Rules:**
+- **Annual Quota**: Each employee has an annual leave quota (default: 12 days, configurable per employee)
+- **Monthly Limit**: Maximum days per month (default: 5 days, configurable via `MAX_LEAVE_DAYS_PER_MONTH`)
+- **Quota Check**: System validates against both used and pending leaves
+- **No Overlap**: Cannot request overlapping leave dates
+- Pending leaves count toward quota until approved or rejected
+
 **Response (201 Created):**
 ```json
 {
@@ -548,10 +555,12 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
             "id": 1,
             "name": "John Doe",
             "email": "employee@example.com",
-            "role": "employee"
+            "role": "employee",
+            "leave_quota_days": 12
         },
         "start_date": "2024-02-01",
         "end_date": "2024-02-03",
+        "days": 3,
         "reason": "Family emergency - need to travel to hometown",
         "status": "pending",
         "approved_by": null,
@@ -563,6 +572,70 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
     "message": "Leave request submitted successfully"
 }
 ```
+
+**Response (422 Validation Error - Quota Exceeded):**
+```json
+{
+    "success": false,
+    "message": "Insufficient leave quota. You have 2 days remaining out of 12 days annual quota. (Used: 8, Pending: 2, Requested: 5)"
+}
+```
+
+**Response (422 Validation Error - Monthly Limit):**
+```json
+{
+    "success": false,
+    "message": "Monthly leave limit exceeded for February 2024. Maximum 5 days per month allowed. You already have 3 days in this month, and requesting 5 more days."
+}
+```
+
+**Response (422 Validation Error - Overlapping):**
+```json
+{
+    "success": false,
+    "message": "You already have a leave request for this date range."
+}
+```
+
+---
+
+### Get Leave Summary (Employee)
+
+Get leave quota summary for current year.
+
+**Endpoint:** `GET /api/v1/leaves/summary`
+
+**Authentication Required:** Yes (Bearer Token + Employee Role)
+
+**Query Parameters:**
+- `year` (optional): Year to get summary for (default: current year)
+
+**Example Request:**
+```
+GET /api/v1/leaves/summary?year=2024
+```
+
+**Response (200 OK):**
+```json
+{
+    "success": true,
+    "data": {
+        "year": 2024,
+        "total_quota": 12,
+        "used_days": 8,
+        "pending_days": 2,
+        "remaining_days": 2,
+        "max_per_month": 5
+    }
+}
+```
+
+**Field Descriptions:**
+- `total_quota`: Employee's annual leave quota
+- `used_days`: Approved leaves taken this year
+- `pending_days`: Pending leave requests this year
+- `remaining_days`: Available days (quota - used - pending)
+- `max_per_month`: Maximum days allowed per month
 
 ---
 
@@ -580,11 +653,20 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
         {
             "id": 1,
             "user_id": 1,
+            "user": {
+                "id": 1,
+                "name": "John Doe",
+                "email": "employee@example.com",
+                "role": "employee",
+                "leave_quota_days": 12
+            },
             "start_date": "2024-02-01",
             "end_date": "2024-02-03",
+            "days": 3,
             "reason": "Family emergency",
             "status": "pending",
             "approved_by": null,
+            "approver": null,
             "approved_at": null,
             "notes": null,
             "requested_at": "2024-01-15T10:00:00.000000Z"
@@ -906,7 +988,8 @@ All user management endpoints require **Manager** role.
     "email": "newemployee@example.com",
     "password": "SecurePass123!",
     "password_confirmation": "SecurePass123!",
-    "role": "employee"
+    "role": "employee",
+    "leave_quota_days": 15
 }
 ```
 
@@ -915,6 +998,7 @@ All user management endpoints require **Manager** role.
 - `email`: required, valid email, unique in database
 - `password`: required, minimum 8 characters, confirmed
 - `role`: required, enum (manager, employee)
+- `leave_quota_days`: optional, integer, min 0, max 365 (default: 12 from config)
 
 **Response (201 Created):**
 ```json
@@ -925,6 +1009,7 @@ All user management endpoints require **Manager** role.
         "name": "New Employee",
         "email": "newemployee@example.com",
         "role": "employee",
+        "leave_quota_days": 15,
         "created_at": "2024-01-15T10:00:00.000000Z"
     },
     "message": "User created successfully"
@@ -944,7 +1029,8 @@ All user management endpoints require **Manager** role.
 {
     "name": "Updated Name",
     "email": "updated@example.com",
-    "role": "employee"
+    "role": "employee",
+    "leave_quota_days": 18
 }
 ```
 
@@ -953,6 +1039,7 @@ All user management endpoints require **Manager** role.
 - `email`: required, valid email, unique (except current user)
 - `password`: optional, minimum 8 characters, confirmed
 - `role`: required, enum (manager, employee)
+- `leave_quota_days`: optional, integer, min 0, max 365
 
 **Response (200 OK):**
 ```json
@@ -963,6 +1050,7 @@ All user management endpoints require **Manager** role.
         "name": "Updated Name",
         "email": "updated@example.com",
         "role": "employee",
+        "leave_quota_days": 18,
         "created_at": "2024-01-15T10:00:00.000000Z"
     },
     "message": "User updated successfully"
