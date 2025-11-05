@@ -6,6 +6,13 @@
 - **API Version**: v1
 - **Content-Type**: `application/json`
 - **Authentication**: Laravel Sanctum (Bearer Token)
+- **Timezone**: Asia/Jakarta (WIB, UTC+7)
+- **Date Format**: ISO 8601 (e.g., `2025-11-05T10:30:00.000000Z`)
+
+### Important Notes:
+- All timestamps are stored and returned in **WIB (Asia/Jakarta)** timezone
+- Date-only fields (e.g., `date`, `start_date`, `end_date`) use format: `YYYY-MM-DD`
+- DateTime fields use ISO 8601 format with timezone information
 
 ---
 
