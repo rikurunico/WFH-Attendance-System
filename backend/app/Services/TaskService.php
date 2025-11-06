@@ -45,11 +45,19 @@ class TaskService
     }
 
     /**
-     * Get incomplete tasks for user.
+     * Get incomplete tasks for user (from all history).
      */
     public function getIncompleteTasks(User $user): \Illuminate\Database\Eloquent\Collection
     {
         return $this->taskRepository->getIncompleteTasksForUser($user->id);
+    }
+
+    /**
+     * Get incomplete tasks from user's last session only.
+     */
+    public function getIncompleteTasksFromLastSession(User $user): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->taskRepository->getIncompleteTasksFromLastSession($user->id);
     }
 }
 

@@ -42,6 +42,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(fu
     Route::prefix('tasks')->middleware('role:employee')->group(function () {
         Route::post('/add', [TaskController::class, 'addTasks']);
         Route::get('/incomplete', [TaskController::class, 'incomplete']);
+        Route::get('/incomplete-last-session', [TaskController::class, 'incompleteFromLastSession']);
     });
 
     // Employee Report routes

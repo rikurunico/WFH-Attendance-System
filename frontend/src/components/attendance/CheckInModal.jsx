@@ -2,19 +2,52 @@ import { useState, useRef, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
-import { Plus, X, ClipboardPaste } from 'lucide-react';
+import { Plus, X, ClipboardPaste, AlertCircle, CheckSquare } from 'lucide-react';
+import { getIncompleteTasksFromLastSession } from '../../api/task.api';
+import toast from 'react-hot-toast';
 
 export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [tasks, setTasks] = useState([{ title: '' }]);
+  const [incompleteTasks, setIncompleteTasks] = useState([]);
+  const [loadingIncompleteTasks, setLoadingIncompleteTasks] = useState(false);
+  const [showIncompleteTasks, setShowIncompleteTasks] = useState(false);
   const inputRefs = useRef({});
 
-  // Reset tasks when modal opens
+  // Fetch incomplete tasks when modal opens
   useEffect(() => {
     if (isOpen) {
       setTasks([{ title: '' }]);
       inputRefs.current = {};
+      fetchIncompleteTasks();
     }
   }, [isOpen]);
+
+  const fetchIncompleteTasks = async () => {
+    try {
+      setLoadingIncompleteTasks(true);
+      const response = await getIncompleteTasksFromLastSession();
+      if (response.success && response.data) {
+        // Map tasks from last session
+        const tasks = response.data.map(task => ({
+          title: task.title,
+          blocker_reason: task.blocker_reason,
+          from_date: task.attendance?.date || null
+        }));
+        
+        setIncompleteTasks(tasks);
+        
+        // Auto-show if there are incomplete tasks
+        if (tasks.length > 0) {
+          setShowIncompleteTasks(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch incomplete tasks:', error);
+      // Don't show error toast - it's not critical
+    } finally {
+      setLoadingIncompleteTasks(false);
+    }
+  };
 
   // Focus first input when modal opens
   useEffect(() => {
@@ -40,6 +73,59 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
         }, 50);
       }
     }
+  };
+
+  const addIncompleteTask = (incompleteTask) => {
+    // Check if task already exists in current tasks
+    const exists = tasks.some(t => t.title.trim().toLowerCase() === incompleteTask.title.trim().toLowerCase());
+    
+    if (exists) {
+      toast.error('Tugas ini sudah ada dalam daftar');
+      return;
+    }
+    
+    if (tasks.length >= 20) {
+      toast.error('Maksimal 20 tugas');
+      return;
+    }
+    
+    // Add to tasks list
+    // If first task is empty, replace it. Otherwise, add new task
+    if (tasks.length === 1 && tasks[0].title.trim() === '') {
+      setTasks([{ title: incompleteTask.title }]);
+    } else {
+      setTasks([...tasks, { title: incompleteTask.title }]);
+    }
+    
+    toast.success(`? "${incompleteTask.title}" ditambahkan`);
+  };
+
+  const addAllIncompleteTasks = () => {
+    const availableSlots = 20 - (tasks.length === 1 && tasks[0].title.trim() === '' ? 0 : tasks.length);
+    
+    if (availableSlots === 0) {
+      toast.error('Tidak ada slot tersisa (maksimal 20 tugas)');
+      return;
+    }
+    
+    // Get tasks that don't exist yet
+    const newTasks = incompleteTasks.filter(incTask => {
+      return !tasks.some(t => t.title.trim().toLowerCase() === incTask.title.trim().toLowerCase());
+    }).slice(0, availableSlots);
+    
+    if (newTasks.length === 0) {
+      toast.error('Semua tugas yang belum selesai sudah ada dalam daftar');
+      return;
+    }
+    
+    // Add new tasks
+    if (tasks.length === 1 && tasks[0].title.trim() === '') {
+      setTasks(newTasks.map(t => ({ title: t.title })));
+    } else {
+      setTasks([...tasks, ...newTasks.map(t => ({ title: t.title }))]);
+    }
+    
+    toast.success(`${newTasks.length} tugas ditambahkan`);
   };
 
   const removeTask = (index) => {
@@ -144,7 +230,7 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Check In" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Check In" size="lg">
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <div className="flex items-start justify-between mb-3">
@@ -154,6 +240,73 @@ export const CheckInModal = ({ isOpen, onClose, onSubmit, loading }) => {
               </p>
             </div>
           </div>
+
+          {/* Incomplete Tasks Section */}
+          {incompleteTasks.length > 0 && (
+            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle size={18} className="text-orange-600 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-orange-900">
+                      Tugas Belum Selesai dari Sesi Terakhir ({incompleteTasks.length})
+                    </h4>
+                    <p className="text-xs text-orange-700 mt-0.5">
+                      Tugas yang belum diselesaikan dari sesi checkout terakhir Anda
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowIncompleteTasks(!showIncompleteTasks)}
+                  className="text-xs text-orange-700 hover:text-orange-900 underline"
+                >
+                  {showIncompleteTasks ? 'Sembunyikan' : 'Tampilkan'}
+                </button>
+              </div>
+
+              {showIncompleteTasks && (
+                <>
+                  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                    {incompleteTasks.map((incTask, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-start justify-between p-2 bg-white rounded border border-orange-200 hover:border-orange-300 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {incTask.title}
+                          </p>
+                          {incTask.blocker_reason && (
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              <span className="font-medium">Blocker:</span> {incTask.blocker_reason}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addIncompleteTask(incTask)}
+                          className="ml-2 px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors flex-shrink-0"
+                          title="Tambahkan tugas ini"
+                        >
+                          + Tambah
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={addAllIncompleteTasks}
+                    className="mt-3 w-full px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <CheckSquare size={16} />
+                    <span>Tambahkan Semua Tugas Belum Selesai</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Paste Helper */}
           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">

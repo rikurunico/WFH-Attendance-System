@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
+import toast from 'react-hot-toast';
 
 export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], attendanceId }) => {
   const [taskStatuses, setTaskStatuses] = useState([]);
@@ -40,7 +41,7 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
     );
     
     if (hasError) {
-      alert('Please provide blocker reason for incomplete tasks');
+      toast.error('Please provide blocker reason for incomplete tasks');
       return;
     }
     

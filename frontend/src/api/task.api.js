@@ -12,3 +12,8 @@ export const getIncompleteTasks = async () => {
   const response = await apiClient.get('/tasks/incomplete');
   return response.data;
 };
+
+export const getIncompleteTasksFromLastSession = async () => {
+  const response = await apiClient.get('/tasks/incomplete-last-session');
+  return response.data;
+};

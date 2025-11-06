@@ -60,4 +60,24 @@ class TaskController extends Controller
             ], 500);
         }
     }
+
+    public function incompleteFromLastSession(): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            $incompleteTasks = $this->taskService->getIncompleteTasksFromLastSession($user);
+
+            return response()->json([
+                'success' => true,
+                'data' => TaskResource::collection($incompleteTasks),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Get incomplete tasks from last session failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get incomplete tasks from last session',
+            ], 500);
+        }
+    }
 }

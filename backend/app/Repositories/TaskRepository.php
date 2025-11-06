@@ -56,13 +56,35 @@ class TaskRepository
     }
 
     /**
-     * Get incomplete tasks for user.
+     * Get incomplete tasks for user (from all history).
      */
     public function getIncompleteTasksForUser(int $userId): Collection
     {
         return Task::whereHas('attendance', function ($query) use ($userId) {
             $query->where('user_id', $userId);
         })
+            ->where('is_completed', false)
+            ->with('attendance')
+            ->get();
+    }
+
+    /**
+     * Get incomplete tasks from user's last attendance session only.
+     */
+    public function getIncompleteTasksFromLastSession(int $userId): Collection
+    {
+        // Get the last attendance (most recent check-out)
+        $lastAttendance = \App\Models\Attendance::where('user_id', $userId)
+            ->whereNotNull('check_out') // Only completed sessions
+            ->orderBy('check_out', 'desc')
+            ->first();
+
+        if (!$lastAttendance) {
+            return collect([]);
+        }
+
+        // Get incomplete tasks from that attendance only
+        return Task::where('attendance_id', $lastAttendance->id)
             ->where('is_completed', false)
             ->with('attendance')
             ->get();
