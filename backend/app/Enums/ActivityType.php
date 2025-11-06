@@ -22,5 +22,6 @@ enum ActivityType: string
     case AUTO_CHECKOUT = 'auto_checkout';
     case LOGIN = 'login';
     case LOGOUT = 'logout';
+    case PASSWORD_CHANGED = 'password_changed';
 }
 

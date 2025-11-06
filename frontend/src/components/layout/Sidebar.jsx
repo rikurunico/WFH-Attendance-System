@@ -9,7 +9,8 @@ import {
   ClipboardList,
   Activity,
   TrendingUp,
-  X
+  X,
+  Key
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -20,6 +21,7 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
     { to: '/employee/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/employee/report', icon: FileText, label: 'Laporan Saya' },
     { to: '/employee/leave', icon: Calendar, label: 'Pengajuan Cuti' },
+    { to: '/employee/change-password', icon: Key, label: 'Ganti Password' },
   ];
 
   const managerLinks = [

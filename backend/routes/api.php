@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
+use App\Http\Controllers\Api\ChangePasswordController;
 use App\Http\Controllers\Api\EmployeeReportController;
 use App\Http\Controllers\Api\HolidayController;
 use App\Http\Controllers\Api\LeaveController;
@@ -30,6 +31,9 @@ Route::prefix('v1/auth')->group(function () {
 Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(function () {
     // Authentication
     Route::post('/auth/logout', [LogoutController::class, 'logout']);
+    
+    // Change Password (available for all authenticated users)
+    Route::post('/change-password', [ChangePasswordController::class, 'changePassword']);
 
     // Attendance routes (Employee)
     Route::prefix('attendance')->middleware('role:employee')->group(function () {

@@ -11,6 +11,7 @@ import { Login } from './pages/auth/Login';
 import { EmployeeDashboard } from './pages/employee/Dashboard';
 import { MyReport } from './pages/employee/MyReport';
 import { MyLeave } from './pages/employee/MyLeave';
+import { ChangePassword } from './pages/employee/ChangePassword';
 
 // Manager Pages
 import { ManagerDashboard } from './pages/manager/Dashboard';
@@ -98,6 +99,14 @@ function App() {
             element={
               <PrivateRoute requiredRole="employee">
                 <MyLeave />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/employee/change-password"
+            element={
+              <PrivateRoute requiredRole="employee">
+                <ChangePassword />
               </PrivateRoute>
             }
           />
