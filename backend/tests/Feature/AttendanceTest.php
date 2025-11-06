@@ -324,4 +324,142 @@ class AttendanceTest extends TestCase
         $totalHours = $response->json('data.total_hours');
         $this->assertGreaterThanOrEqual(0, $totalHours); // Should be calculated, even if small
     }
+
+    public function test_employee_can_see_active_attendance_from_yesterday_in_today_status(): void
+    {
+        $token = $this->user->createToken('auth-token')->plainTextToken;
+
+        // Create attendance from yesterday that is still active (no checkout)
+        $yesterdayAttendance = Attendance::factory()->create([
+            'user_id' => $this->user->id,
+            'check_in' => Carbon::yesterday()->setTime(23, 0, 0),
+            'check_out' => null,
+            'date' => Carbon::yesterday()->toDateString(),
+            'total_hours' => 0,
+        ]);
+
+        $yesterdayAttendance->tasks()->create([
+            'title' => 'Task from yesterday',
+            'is_completed' => false,
+        ]);
+
+        // Get today's status - should show yesterday's active attendance
+        $response = $this->getJson('/api/v1/attendance/today', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'is_checked_in' => true,
+                ],
+            ]);
+
+        // Verify it's the yesterday attendance
+        $currentSession = $response->json('data.current_session');
+        $this->assertNotNull($currentSession);
+        $this->assertEquals($yesterdayAttendance->id, $currentSession['id']);
+        $this->assertEquals('Task from yesterday', $currentSession['tasks'][0]['title']);
+    }
+
+    public function test_employee_can_checkout_from_yesterday_attendance(): void
+    {
+        $token = $this->user->createToken('auth-token')->plainTextToken;
+
+        // Create attendance from yesterday that is still active
+        $yesterdayAttendance = Attendance::factory()->create([
+            'user_id' => $this->user->id,
+            'check_in' => Carbon::yesterday()->setTime(23, 0, 0),
+            'check_out' => null,
+            'date' => Carbon::yesterday()->toDateString(),
+            'total_hours' => 0,
+        ]);
+
+        $task = $yesterdayAttendance->tasks()->create([
+            'title' => 'Task from yesterday',
+            'is_completed' => false,
+        ]);
+
+        // Checkout today - should work
+        $response = $this->postJson('/api/v1/attendance/check-out', [
+            'attendance_id' => $yesterdayAttendance->id,
+            'tasks' => [
+                [
+                    'id' => $task->id,
+                    'is_completed' => true,
+                    'blocker_reason' => null,
+                ],
+            ],
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        // Verify checkout was successful
+        $yesterdayAttendance->refresh();
+        $this->assertNotNull($yesterdayAttendance->check_out);
+        $this->assertGreaterThan(0, $yesterdayAttendance->total_hours);
+    }
+
+    public function test_findActiveByUser_includes_yesterday_attendance(): void
+    {
+        $token = $this->user->createToken('auth-token')->plainTextToken;
+
+        // Create active attendance from yesterday
+        $yesterdayAttendance = Attendance::factory()->create([
+            'user_id' => $this->user->id,
+            'check_in' => Carbon::yesterday()->setTime(23, 30, 0),
+            'check_out' => null,
+            'date' => Carbon::yesterday()->toDateString(),
+            'total_hours' => 0,
+        ]);
+
+        // Try to check in today - should fail because still checked in from yesterday
+        $response = $this->postJson('/api/v1/attendance/check-in', [
+            'tasks' => [
+                ['title' => 'New task today'],
+            ],
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'You have already checked in. Please check out first.',
+            ]);
+    }
+
+    public function test_employee_can_checkin_after_checkout_from_yesterday(): void
+    {
+        $token = $this->user->createToken('auth-token')->plainTextToken;
+
+        // Create completed attendance from yesterday
+        $yesterdayAttendance = Attendance::factory()->create([
+            'user_id' => $this->user->id,
+            'check_in' => Carbon::yesterday()->setTime(9, 0, 0),
+            'check_out' => Carbon::yesterday()->setTime(17, 0, 0),
+            'date' => Carbon::yesterday()->toDateString(),
+            'total_hours' => 8.0,
+        ]);
+
+        // Try to check in today - should succeed
+        $response = $this->postJson('/api/v1/attendance/check-in', [
+            'tasks' => [
+                ['title' => 'Task for today'],
+            ],
+        ], [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJson(['success' => true]);
+
+        // Verify new attendance is for today
+        $data = $response->json('data');
+        $this->assertEquals(Carbon::today()->toDateString(), $data['date']);
+    }
 }

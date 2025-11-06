@@ -80,7 +80,7 @@ class TaskRepository
             ->first();
 
         if (!$lastAttendance) {
-            return collect([]);
+            return new Collection([]);
         }
 
         // Get incomplete tasks from that attendance only
