@@ -23,7 +23,7 @@ class CheckOutRequest extends FormRequest
     {
         return [
             'attendance_id' => 'required|exists:attendances,id',
-            'tasks' => 'required|array',
+            'tasks' => 'array', // Allow empty array for edge cases
             'tasks.*.id' => 'required|exists:tasks,id',
             'tasks.*.is_completed' => 'required|boolean',
             'tasks.*.blocker_reason' => 'required_if:tasks.*.is_completed,false|string|max:500|nullable',

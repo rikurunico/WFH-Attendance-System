@@ -106,7 +106,12 @@ class AttendanceService
                 'total_hours' => $totalHours,
             ]);
 
-            $this->taskRepository->updateMultipleStatuses($tasksData);
+            // Only update task statuses if tasks data is provided
+            if (!empty($tasksData)) {
+                $this->taskRepository->updateMultipleStatuses($tasksData);
+            } else {
+                Log::warning("Check-out without task updates for attendance {$attendance->id}");
+            }
 
             $this->activityLogService->logActivity(
                 $user,
@@ -160,10 +165,15 @@ class AttendanceService
             })
             ->values();
 
-        return [
-            'date' => $today->toDateString(),
-            'is_checked_in' => $activeAttendance !== null,
-            'current_session' => $activeAttendance ? [
+        // Build current session data with proper null checks
+        $currentSession = null;
+        if ($activeAttendance) {
+            // Ensure tasks relation is loaded
+            if (!$activeAttendance->relationLoaded('tasks')) {
+                $activeAttendance->load('tasks');
+            }
+            
+            $currentSession = [
                 'id' => $activeAttendance->id,
                 'check_in' => $activeAttendance->check_in,
                 'elapsed_hours' => $this->calculateTotalHours($activeAttendance->check_in, Carbon::now()),
@@ -174,8 +184,14 @@ class AttendanceService
                         'is_completed' => $task->is_completed,
                         'blocker_reason' => $task->blocker_reason,
                     ];
-                }),
-            ] : null,
+                })->toArray(),
+            ];
+        }
+
+        return [
+            'date' => $today->toDateString(),
+            'is_checked_in' => $activeAttendance !== null,
+            'current_session' => $currentSession,
             'today_total_hours' => $todayTotalHours,
             'required_hours' => config('attendance.required_work_hours', 7),
             'remaining_hours' => max(0, config('attendance.required_work_hours', 7) - $todayTotalHours),

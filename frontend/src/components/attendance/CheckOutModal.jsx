@@ -47,13 +47,31 @@ export const CheckOutModal = ({ isOpen, onClose, onSubmit, loading, tasks = [], 
     onSubmit(attendanceId, taskStatuses);
   };
 
-  // Don't render if no tasks
+  // Handle case where tasks are not loaded properly
   if (!tasks || tasks.length === 0) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} title="Check Out" size="lg">
         <div className="text-center py-8">
-          <p className="text-gray-600">Tidak ada tugas ditemukan untuk sesi ini.</p>
-          <p className="text-sm text-gray-500 mt-2">Harap refresh halaman dan coba lagi.</p>
+          <p className="text-gray-600 mb-4">?? Tidak ada tugas ditemukan untuk sesi ini.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            Ini mungkin terjadi karena masalah loading data. Anda masih bisa checkout tanpa update status tugas.
+          </p>
+          <div className="flex justify-center space-x-3">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              onClick={() => {
+                // Force checkout with empty tasks array
+                console.warn('Forcing checkout without tasks');
+                onSubmit(attendanceId, []);
+              }}
+              disabled={loading || !attendanceId}
+            >
+              {loading ? 'Check Out...' : 'Paksa Check Out'}
+            </Button>
+          </div>
         </div>
       </Modal>
     );

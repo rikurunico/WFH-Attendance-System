@@ -29,14 +29,24 @@ class AttendanceRepository
 
     /**
      * Find active attendance for user (has check_in but no check_out).
+     * 
+     * Note: Searches today and yesterday to handle edge cases where:
+     * - User checked in late at night (e.g., 23:00)
+     * - Auto-checkout is not running
+     * - Server downtime occurred
      */
     public function findActiveByUser(User $user): ?Attendance
     {
         return Attendance::where('user_id', $user->id)
             ->whereNotNull('check_in')
             ->whereNull('check_out')
-            ->whereDate('date', Carbon::today())
+            ->where(function ($query) {
+                $query->whereDate('date', Carbon::today())
+                      ->orWhereDate('date', Carbon::yesterday());
+            })
             ->with('tasks')
+            ->orderBy('date', 'desc')
+            ->orderBy('check_in', 'desc')
             ->first();
     }
 

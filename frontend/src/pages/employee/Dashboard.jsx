@@ -20,24 +20,45 @@ export const EmployeeDashboard = () => {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     fetchTodayStatus();
   }, []);
 
-  const fetchTodayStatus = async () => {
+  const fetchTodayStatus = async (retryCount = 0) => {
     try {
       setLoading(true);
+      setFetchError(false);
       const response = await getTodayStatus();
       if (response.success) {
         console.log('Today Status Response:', response.data);
         console.log('Current Session:', response.data?.current_session);
         console.log('Tasks:', response.data?.current_session?.tasks);
-        setTodayStatus(response.data);
+        
+        // Validate response data structure
+        if (response.data && typeof response.data.is_checked_in === 'boolean') {
+          setTodayStatus(response.data);
+          setFetchError(false);
+        } else {
+          console.error('Invalid response structure:', response.data);
+          toast.error('Data tidak valid. Silakan refresh halaman.');
+          setFetchError(true);
+        }
       }
     } catch (error) {
       console.error('Error fetching today status:', error);
-      toast.error('Failed to fetch today status');
+      setFetchError(true);
+      
+      // Retry once after 2 seconds if first attempt fails
+      if (retryCount === 0) {
+        setTimeout(() => {
+          console.log('Retrying fetch today status...');
+          fetchTodayStatus(1);
+        }, 2000);
+      } else {
+        toast.error('Gagal mengambil status. Silakan refresh halaman.');
+      }
     } finally {
       setLoading(false);
     }
@@ -87,17 +108,67 @@ export const EmployeeDashboard = () => {
     );
   }
 
-  const isCheckedIn = todayStatus?.is_checked_in;
+  // Explicitly check for boolean value to avoid undefined issues
+  const isCheckedIn = todayStatus?.is_checked_in === true;
   const currentSession = todayStatus?.current_session;
   const todayTotalHours = todayStatus?.today_total_hours || 0;
   // Use required_hours from API (which uses config) or fallback to constant
   const requiredHours = todayStatus?.required_hours || REQUIRED_WORK_HOURS;
   const remainingHours = Math.max(0, requiredHours - todayTotalHours);
   const progressPercentage = Math.min(100, (todayTotalHours / requiredHours) * 100);
+  
+  // Debug log for troubleshooting
+  console.log('Dashboard State:', {
+    isCheckedIn,
+    hasCurrentSession: !!currentSession,
+    currentSessionId: currentSession?.id,
+    tasksCount: currentSession?.tasks?.length || 0
+  });
 
   return (
     <MainLayout>
       <div className="space-y-6">
+        {/* Error Banner */}
+        {fetchError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="text-red-500" size={20} />
+              <div>
+                <p className="text-red-800 font-medium">Gagal memuat data status</p>
+                <p className="text-red-600 text-sm">Ada masalah saat mengambil data. Silakan refresh halaman.</p>
+              </div>
+            </div>
+            <Button onClick={() => fetchTodayStatus()} variant="secondary" size="sm">
+              Refresh
+            </Button>
+          </div>
+        )}
+
+        {/* Cross-Date Warning Banner */}
+        {isCheckedIn && currentSession && currentSession.check_in && (
+          (() => {
+            const checkInDate = new Date(currentSession.check_in).toDateString();
+            const today = new Date().toDateString();
+            const isCrossDate = checkInDate !== today;
+            
+            if (isCrossDate) {
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
+                  <AlertCircle className="text-yellow-600" size={20} />
+                  <div>
+                    <p className="text-yellow-800 font-medium">⚠️ Anda masih dalam sesi check-in dari hari sebelumnya</p>
+                    <p className="text-yellow-700 text-sm">
+                      Check-in: {new Date(currentSession.check_in).toLocaleString('id-ID')}. 
+                      Silakan checkout untuk menyelesaikan sesi kerja Anda.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()
+        )}
+        
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -112,11 +183,17 @@ export const EmployeeDashboard = () => {
             </p>
           </div>
 
-          {isCheckedIn ? (
+          {todayStatus === null ? (
+            <Button disabled className="flex items-center space-x-2">
+              <Clock size={20} className="animate-spin" />
+              <span>Loading...</span>
+            </Button>
+          ) : isCheckedIn ? (
             <Button
               onClick={() => setShowCheckOutModal(true)}
               variant="danger"
               className="flex items-center space-x-2"
+              disabled={!currentSession?.id}
             >
               <StopCircle size={20} />
               <span>Check Out</span>
@@ -197,7 +274,7 @@ export const EmployeeDashboard = () => {
             </div>
             <p className="text-sm text-gray-600 text-center">
               {progressPercentage >= 100 
-                ? '✓ Target harian tercapai!' 
+                ? '? Target harian tercapai!' 
                 : `${progressPercentage.toFixed(0)}% selesai`}
             </p>
           </div>
@@ -226,8 +303,8 @@ export const EmployeeDashboard = () => {
                   <ul className="space-y-2">
                     {currentSession.tasks.map((task, index) => (
                       <li key={index} className="flex items-start space-x-2">
-                        <span className="text-primary-600 mt-1">•</span>
-                        <span className="text-gray-700">{task.title}</span>
+                        <span className="text-primary-600 mt-1">🎯</span>
+                        <span className="text-gray-700 mt-1">{task.title}</span>
                       </li>
                     ))}
                   </ul>
