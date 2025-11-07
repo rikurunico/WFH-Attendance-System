@@ -24,6 +24,10 @@ class ActivityLogController extends Controller
             $action = $request->get('action');
             $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
             $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
+            $perPage = $request->get('per_page', 10);
+            
+            // Validate per_page parameter
+            $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
 
             $activityType = null;
             if ($action) {
@@ -35,18 +39,26 @@ class ActivityLogController extends Controller
                 }
             }
 
-            $logs = $this->activityLogRepository->getWithFilters(
+            $logs = $this->activityLogRepository->getPaginatedWithFilters(
                 $userId ? (int)$userId : null,
                 $activityType,
                 $startDate,
                 $endDate,
-                50
+                $perPage
             );
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'logs' => ActivityLogResource::collection($logs),
+                    'logs' => ActivityLogResource::collection($logs->items()),
+                ],
+                'pagination' => [
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                    'per_page' => $logs->perPage(),
+                    'total' => $logs->total(),
+                    'from' => $logs->firstItem(),
+                    'to' => $logs->lastItem(),
                 ],
             ], 200);
         } catch (\Exception $e) {

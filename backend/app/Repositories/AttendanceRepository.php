@@ -125,5 +125,21 @@ class AttendanceRepository
             ->orderBy('check_in', 'desc')
             ->get();
     }
+
+    /**
+     * Get paginated attendances (for manager).
+     */
+    public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10)
+    {
+        $query = Attendance::with(['user', 'tasks']);
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        return $query->orderBy('date', 'desc')
+            ->orderBy('check_in', 'desc')
+            ->paginate($perPage);
+    }
 }
 

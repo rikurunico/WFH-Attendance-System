@@ -18,11 +18,24 @@ class UserManagementController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $users = $this->userRepository->getAll();
+            $perPage = request()->get('per_page', 10);
+            
+            // Validate per_page parameter
+            $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
+            
+            $users = $this->userRepository->getPaginated($perPage);
 
             return response()->json([
                 'success' => true,
-                'data' => UserResource::collection($users),
+                'data' => UserResource::collection($users->items()),
+                'pagination' => [
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                    'from' => $users->firstItem(),
+                    'to' => $users->lastItem(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             Log::error('Get users failed: ' . $e->getMessage());

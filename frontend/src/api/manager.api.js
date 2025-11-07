@@ -30,9 +30,9 @@ export const getMonthlyAttendanceReport = async (startDate, endDate) => {
 };
 
 // Attendance Management
-export const getAllAttendances = async (startDate, endDate) => {
+export const getAllAttendances = async (startDate, endDate, page = 1, perPage = 10) => {
   const response = await apiClient.get('/manager/attendances', {
-    params: { start_date: startDate, end_date: endDate },
+    params: { start_date: startDate, end_date: endDate, page, per_page: perPage },
   });
   return response.data;
 };
@@ -54,8 +54,10 @@ export const deleteAttendance = async (id, reason) => {
 };
 
 // User Management
-export const getAllUsers = async () => {
-  const response = await apiClient.get('/manager/users');
+export const getAllUsers = async (page = 1, perPage = 10) => {
+  const response = await apiClient.get('/manager/users', {
+    params: { page, per_page: perPage },
+  });
   return response.data;
 };
 
@@ -113,9 +115,9 @@ export const rejectLeave = async (id, notes) => {
 };
 
 // Activity Logs
-export const getActivityLogs = async (filters) => {
+export const getActivityLogs = async (filters, page = 1, perPage = 10) => {
   const response = await apiClient.get('/manager/activity-logs', {
-    params: filters,
+    params: { ...filters, page, per_page: perPage },
   });
   return response.data;
 };

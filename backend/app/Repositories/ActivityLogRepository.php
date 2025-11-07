@@ -52,6 +52,32 @@ class ActivityLogRepository
     }
 
     /**
+     * Get paginated activity logs with filters.
+     */
+    public function getPaginatedWithFilters(?int $userId = null, ?ActivityType $action = null, ?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10)
+    {
+        $query = ActivityLog::with('user');
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        if ($action) {
+            $query->where('action', $action);
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
+        } elseif ($startDate) {
+            $query->where('created_at', '>=', $startDate->startOfDay());
+        } elseif ($endDate) {
+            $query->where('created_at', '<=', $endDate->endOfDay());
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
      * Get activity logs by user.
      */
     public function getByUser(User $user, int $limit = 50): Collection

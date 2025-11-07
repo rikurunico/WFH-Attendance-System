@@ -5,6 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
+import { Pagination } from '../../components/common/Pagination';
 import { getAllUsers, createUser, updateUser, deleteUser } from '../../api/manager.api';
 import { formatDate } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -18,6 +19,14 @@ export const UserManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -29,16 +38,20 @@ export const UserManagement = () => {
   });
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(1, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1, perPage = 10) => {
     try {
       setLoading(true);
-      const response = await getAllUsers();
+      const response = await getAllUsers(page, perPage);
       
       if (response.success) {
         setUsers(response.data);
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -46,6 +59,14 @@ export const UserManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (page) => {
+    fetchUsers(page, pagination.per_page);
+  };
+
+  const handlePerPageChange = (perPage) => {
+    fetchUsers(1, perPage);
   };
 
   const handleOpenModal = (user = null) => {
@@ -263,6 +284,19 @@ export const UserManagement = () => {
                 </tbody>
               </table>
             </div>
+          )}
+          
+          {users.length > 0 && (
+            <Pagination
+              currentPage={pagination.current_page}
+              lastPage={pagination.last_page}
+              perPage={pagination.per_page}
+              total={pagination.total}
+              from={pagination.from}
+              to={pagination.to}
+              onPageChange={handlePageChange}
+              onPerPageChange={handlePerPageChange}
+            />
           )}
         </Card>
       </div>

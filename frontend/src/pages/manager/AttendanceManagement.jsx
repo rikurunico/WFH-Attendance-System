@@ -5,6 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
+import { Pagination } from '../../components/common/Pagination';
 import { getAllAttendances, editAttendance, deleteAttendance } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd, formatDateTimeForInput } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -21,6 +22,14 @@ export const AttendanceManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [startDate, setStartDate] = useState(getMonthStart());
   const [endDate, setEndDate] = useState(getMonthEnd());
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
 
   const [editFormData, setEditFormData] = useState({
     check_in: '',
@@ -31,16 +40,20 @@ export const AttendanceManagement = () => {
   const [deleteReason, setDeleteReason] = useState('');
 
   useEffect(() => {
-    fetchAttendances();
+    fetchAttendances(1, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchAttendances = async () => {
+  const fetchAttendances = async (page = 1, perPage = 10) => {
     try {
       setLoading(true);
-      const response = await getAllAttendances(startDate, endDate);
+      const response = await getAllAttendances(startDate, endDate, page, perPage);
 
       if (response.success) {
         setAttendances(response.data);
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
       }
     } catch (error) {
       console.error('Error fetching attendances:', error);
@@ -51,7 +64,15 @@ export const AttendanceManagement = () => {
   };
 
   const handleFilter = () => {
-    fetchAttendances();
+    fetchAttendances(1, pagination.per_page);
+  };
+
+  const handlePageChange = (page) => {
+    fetchAttendances(page, pagination.per_page);
+  };
+
+  const handlePerPageChange = (perPage) => {
+    fetchAttendances(1, perPage);
   };
 
   const handleOpenEditModal = (attendance) => {
@@ -291,6 +312,19 @@ export const AttendanceManagement = () => {
                 </tbody>
               </table>
             </div>
+          )}
+          
+          {attendances.length > 0 && (
+            <Pagination
+              currentPage={pagination.current_page}
+              lastPage={pagination.last_page}
+              perPage={pagination.per_page}
+              total={pagination.total}
+              from={pagination.from}
+              to={pagination.to}
+              onPageChange={handlePageChange}
+              onPerPageChange={handlePerPageChange}
+            />
           )}
         </Card>
 

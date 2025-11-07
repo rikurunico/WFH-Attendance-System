@@ -3,6 +3,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Loading } from '../../components/common/Loading';
+import { Pagination } from '../../components/common/Pagination';
 import { getActivityLogs } from '../../api/manager.api';
 import { getAllUsers } from '../../api/manager.api';
 import { formatDateTime } from '../../utils/dateHelpers';
@@ -21,16 +22,24 @@ export const ActivityLogs = () => {
     start_date: '',
     end_date: '',
   });
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
 
   useEffect(() => {
     fetchUsers();
-    fetchLogs();
+    fetchLogs(1, 10);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
     try {
-      const response = await getAllUsers();
+      const response = await getAllUsers(1, 1000); // Get all users for filter dropdown
       if (response.success) {
         setUsers(response.data);
       }
@@ -39,7 +48,7 @@ export const ActivityLogs = () => {
     }
   };
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (page = 1, perPage = 10) => {
     try {
       setLoading(true);
       // Clean filters - remove empty strings
@@ -49,10 +58,13 @@ export const ActivityLogs = () => {
       if (filters.start_date) cleanFilters.start_date = filters.start_date;
       if (filters.end_date) cleanFilters.end_date = filters.end_date;
       
-      const response = await getActivityLogs(cleanFilters);
+      const response = await getActivityLogs(cleanFilters, page, perPage);
       
       if (response.success) {
         setLogs(response.data.logs || []);
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
       } else {
         toast.error(response.message || 'Gagal mengambil log aktivitas');
       }
@@ -63,6 +75,14 @@ export const ActivityLogs = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (page) => {
+    fetchLogs(page, pagination.per_page);
+  };
+
+  const handlePerPageChange = (perPage) => {
+    fetchLogs(1, perPage);
   };
 
   const handleFilter = () => {
@@ -80,10 +100,13 @@ export const ActivityLogs = () => {
     // Reset filters and fetch logs with empty filters
     setTimeout(() => {
       // Use empty filters directly
-      getActivityLogs({})
+      getActivityLogs({}, 1, pagination.per_page)
         .then((response) => {
           if (response.success) {
             setLogs(response.data.logs || []);
+            if (response.pagination) {
+              setPagination(response.pagination);
+            }
           }
         })
         .catch((error) => {
@@ -299,6 +322,19 @@ export const ActivityLogs = () => {
                 </div>
               ))}
             </div>
+          )}
+          
+          {logs.length > 0 && (
+            <Pagination
+              currentPage={pagination.current_page}
+              lastPage={pagination.last_page}
+              perPage={pagination.per_page}
+              total={pagination.total}
+              from={pagination.from}
+              to={pagination.to}
+              onPageChange={handlePageChange}
+              onPerPageChange={handlePerPageChange}
+            />
           )}
         </Card>
       </div>

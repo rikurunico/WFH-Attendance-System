@@ -27,12 +27,24 @@ class ManagerAttendanceController extends Controller
         try {
             $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
             $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
+            $perPage = $request->get('per_page', 10);
+            
+            // Validate per_page parameter
+            $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
 
-            $attendances = $this->attendanceRepository->getAllInDateRange($startDate, $endDate);
+            $attendances = $this->attendanceRepository->getPaginatedInDateRange($startDate, $endDate, $perPage);
 
             return response()->json([
                 'success' => true,
-                'data' => AttendanceResource::collection($attendances),
+                'data' => AttendanceResource::collection($attendances->items()),
+                'pagination' => [
+                    'current_page' => $attendances->currentPage(),
+                    'last_page' => $attendances->lastPage(),
+                    'per_page' => $attendances->perPage(),
+                    'total' => $attendances->total(),
+                    'from' => $attendances->firstItem(),
+                    'to' => $attendances->lastItem(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             Log::error('Get attendances failed: ' . $e->getMessage());

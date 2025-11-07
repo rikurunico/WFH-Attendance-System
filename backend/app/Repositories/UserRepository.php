@@ -17,6 +17,14 @@ class UserRepository
     }
 
     /**
+     * Get paginated users.
+     */
+    public function getPaginated(int $perPage = 10)
+    {
+        return User::orderBy('name')->paginate($perPage);
+    }
+
+    /**
      * Find user by ID.
      */
     public function findById(int $id): ?User
