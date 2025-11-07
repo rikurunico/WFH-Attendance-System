@@ -70,8 +70,36 @@ class ActivityLogTest extends TestCase
                         ],
                     ],
                 ],
+                'pagination' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                    'from',
+                    'to',
+                ],
             ])
             ->assertJson(['success' => true]);
+    }
+
+    public function test_manager_can_view_activity_logs_with_pagination(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create multiple activity logs
+        ActivityLog::factory()->count(25)->create([
+            'user_id' => $this->employee->id,
+            'action' => ActivityType::CHECK_IN,
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/activity-logs?page=1&per_page=10', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonPath('pagination.per_page', 10)
+            ->assertJsonPath('pagination.current_page', 1);
     }
 
     public function test_manager_can_filter_activity_logs_by_user(): void

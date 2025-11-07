@@ -53,6 +53,11 @@ export const deleteAttendance = async (id, reason) => {
   return response.data;
 };
 
+export const updateTask = async (id, taskData) => {
+  const response = await apiClient.put(`/manager/tasks/${id}`, taskData);
+  return response.data;
+};
+
 // User Management
 export const getAllUsers = async (page = 1, perPage = 10) => {
   const response = await apiClient.get('/manager/users', {

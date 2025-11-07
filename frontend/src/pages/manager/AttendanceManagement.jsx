@@ -6,7 +6,7 @@ import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { Pagination } from '../../components/common/Pagination';
-import { getAllAttendances, editAttendance, deleteAttendance } from '../../api/manager.api';
+import { getAllAttendances, editAttendance, deleteAttendance, updateTask } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd, formatDateTimeForInput } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Clock, Edit, Trash2, Calendar, User } from 'lucide-react';
@@ -18,6 +18,7 @@ export const AttendanceManagement = () => {
   const [attendances, setAttendances] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [startDate, setStartDate] = useState(getMonthStart());
@@ -38,6 +39,8 @@ export const AttendanceManagement = () => {
   });
 
   const [deleteReason, setDeleteReason] = useState('');
+  
+  const [editingTasks, setEditingTasks] = useState([]);
 
   useEffect(() => {
     fetchAttendances(1, 10);
@@ -107,6 +110,35 @@ export const AttendanceManagement = () => {
     setDeleteReason('');
   };
 
+  const handleOpenTaskModal = (attendance) => {
+    setEditingAttendance(attendance);
+    setEditingTasks(attendance.tasks?.map(task => ({
+      id: task.id,
+      title: task.title,
+      is_completed: task.is_completed,
+      blocker_reason: task.blocker_reason || '',
+    })) || []);
+    setShowTaskModal(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setShowTaskModal(false);
+    setEditingAttendance(null);
+    setEditingTasks([]);
+  };
+
+  const handleTaskChange = (index, field, value) => {
+    const updatedTasks = [...editingTasks];
+    updatedTasks[index][field] = value;
+    
+    // Clear blocker reason if task is marked as completed
+    if (field === 'is_completed' && value === true) {
+      updatedTasks[index].blocker_reason = '';
+    }
+    
+    setEditingTasks(updatedTasks);
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
 
@@ -156,6 +188,41 @@ export const AttendanceManagement = () => {
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to delete attendance';
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTaskSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate incomplete tasks have blocker reasons
+    const invalidTasks = editingTasks.filter(
+      task => !task.is_completed && (!task.blocker_reason || task.blocker_reason.trim().length === 0)
+    );
+
+    if (invalidTasks.length > 0) {
+      toast.error('Tugas yang belum selesai harus memiliki alasan blocker');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      // Update each task
+      for (const task of editingTasks) {
+        await updateTask(task.id, {
+          is_completed: task.is_completed,
+          blocker_reason: task.is_completed ? null : task.blocker_reason,
+        });
+      }
+
+      toast.success('Tugas berhasil diperbarui');
+      handleCloseTaskModal();
+      fetchAttendances(pagination.current_page, pagination.per_page);
+    } catch (error) {
+      const message = error.response?.data?.message || 'Gagal memperbarui tugas';
       toast.error(message);
     } finally {
       setSubmitting(false);
@@ -280,14 +347,18 @@ export const AttendanceManagement = () => {
                         {formatHours(attendance.total_hours)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex flex-col">
+                        <button
+                          onClick={() => handleOpenTaskModal(attendance)}
+                          className="flex flex-col hover:bg-gray-50 p-2 rounded transition-colors w-full text-left"
+                          title="Klik untuk edit tugas"
+                        >
                           <span className="text-green-600">
-                            {attendance.tasks?.filter(t => t.is_completed).length || 0} selesai
+                            ✓ {attendance.tasks?.filter(t => t.is_completed).length || 0} selesai
                           </span>
                           <span className="text-red-600">
-                            {attendance.tasks?.filter(t => !t.is_completed).length || 0} belum selesai
+                            ✗ {attendance.tasks?.filter(t => !t.is_completed).length || 0} belum selesai
                           </span>
-                        </div>
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
@@ -450,6 +521,84 @@ export const AttendanceManagement = () => {
                 disabled={submitting}
               >
                 {submitting ? 'Menghapus...' : 'Hapus Absensi'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Edit Tasks Modal */}
+        <Modal
+          isOpen={showTaskModal}
+          onClose={handleCloseTaskModal}
+          title="Edit Tugas"
+          size="lg"
+        >
+          <form onSubmit={handleTaskSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-4">
+                Edit status tugas untuk <strong>{editingAttendance?.user?.name}</strong>
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                Tanggal: {formatDate(editingAttendance?.date)}<br />
+                Total Tugas: {editingTasks.length}
+              </p>
+            </div>
+
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {editingTasks.map((task, index) => (
+                <div key={task.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{task.title}</p>
+                    </div>
+                    <div className="ml-4">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={task.is_completed}
+                          onChange={(e) => handleTaskChange(index, 'is_completed', e.target.checked)}
+                          className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                        <span className={`text-sm font-medium ${task.is_completed ? 'text-green-600' : 'text-gray-600'}`}>
+                          {task.is_completed ? 'Selesai' : 'Belum Selesai'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {!task.is_completed && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Alasan Blocker <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={task.blocker_reason}
+                        onChange={(e) => handleTaskChange(index, 'blocker_reason', e.target.value)}
+                        className="input-field w-full"
+                        rows="2"
+                        placeholder="Jelaskan alasan tugas belum selesai"
+                        required={!task.is_completed}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCloseTaskModal}
+                disabled={submitting}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+              >
+                {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
               </Button>
             </div>
           </form>

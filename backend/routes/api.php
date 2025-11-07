@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LeaveController;
 use App\Http\Controllers\Api\ManagerAttendanceController;
 use App\Http\Controllers\Api\ManagerLeaveController;
 use App\Http\Controllers\Api\ManagerReportController;
+use App\Http\Controllers\Api\ManagerTaskController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Middleware\CheckRole;
@@ -85,6 +86,11 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(fu
             Route::get('/', [ManagerAttendanceController::class, 'index']);
             Route::put('/{id}', [ManagerAttendanceController::class, 'update']);
             Route::delete('/{id}', [ManagerAttendanceController::class, 'destroy']);
+        });
+
+        // Task Management (Manager)
+        Route::prefix('manager/tasks')->group(function () {
+            Route::put('/{id}', [ManagerTaskController::class, 'update']);
         });
 
         // Holiday Management

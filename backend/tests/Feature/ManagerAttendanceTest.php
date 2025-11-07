@@ -63,8 +63,36 @@ class ManagerAttendanceTest extends TestCase
                         'total_hours',
                     ],
                 ],
+                'pagination' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                    'from',
+                    'to',
+                ],
             ])
             ->assertJson(['success' => true]);
+    }
+
+    public function test_manager_can_list_attendances_with_pagination(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create additional attendances
+        Attendance::factory()->count(25)->create([
+            'user_id' => $this->employee->id,
+            'date' => Carbon::today(),
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/attendances?page=1&per_page=10', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonPath('pagination.per_page', 10)
+            ->assertJsonPath('pagination.current_page', 1);
     }
 
     public function test_manager_can_list_attendances_with_date_range(): void

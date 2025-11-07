@@ -50,8 +50,62 @@ class UserManagementTest extends TestCase
                         'role',
                     ],
                 ],
+                'pagination' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                    'from',
+                    'to',
+                ],
             ])
             ->assertJson(['success' => true]);
+    }
+
+    public function test_manager_can_list_users_with_pagination(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create additional users
+        User::factory()->count(15)->create(['role' => UserRole::EMPLOYEE]);
+
+        $response = $this->getJson('/api/v1/manager/users?page=1&per_page=10', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonPath('pagination.per_page', 10)
+            ->assertJsonPath('pagination.current_page', 1);
+    }
+
+    public function test_manager_can_change_per_page_value(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create additional users
+        User::factory()->count(60)->create(['role' => UserRole::EMPLOYEE]);
+
+        $response = $this->getJson('/api/v1/manager/users?page=1&per_page=50', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonPath('pagination.per_page', 50);
+    }
+
+    public function test_pagination_validates_per_page_values(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Test with invalid per_page value (should default to 10)
+        $response = $this->getJson('/api/v1/manager/users?per_page=999', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('pagination.per_page', 10);
     }
 
     public function test_manager_can_create_user(): void
