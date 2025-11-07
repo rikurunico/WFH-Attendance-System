@@ -129,12 +129,16 @@ class AttendanceRepository
     /**
      * Get paginated attendances (for manager).
      */
-    public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10)
+    public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10, ?int $userId = null)
     {
         $query = Attendance::with(['user', 'tasks']);
 
         if ($startDate && $endDate) {
             $query->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        if ($userId) {
+            $query->where('user_id', $userId);
         }
 
         return $query->orderBy('date', 'desc')

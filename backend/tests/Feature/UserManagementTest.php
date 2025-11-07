@@ -268,4 +268,133 @@ class UserManagementTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_manager_can_search_users_by_name(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create users with specific names
+        User::factory()->create([
+            'name' => 'John Doe',
+            'email' => 'john.doe@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Jane Smith',
+            'email' => 'jane.smith@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Johnny Walker',
+            'email' => 'johnny.walker@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        // Search for "john" should return John Doe and Johnny Walker
+        $response = $this->getJson('/api/v1/manager/users/search?q=john', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'John Doe'])
+            ->assertJsonFragment(['name' => 'Johnny Walker']);
+    }
+
+    public function test_manager_search_returns_limited_results(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create 15 users with "Test" in their name
+        for ($i = 1; $i <= 15; $i++) {
+            User::factory()->create([
+                'name' => "Test User {$i}",
+                'email' => "testuser{$i}@example.com",
+                'role' => UserRole::EMPLOYEE,
+            ]);
+        }
+
+        // Search with limit of 5
+        $response = $this->getJson('/api/v1/manager/users/search?q=test&limit=5', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonCount(5, 'data');
+    }
+
+    public function test_manager_search_returns_empty_array_for_empty_query(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        $response = $this->getJson('/api/v1/manager/users/search?q=', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_manager_search_returns_empty_array_for_no_matches(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        $response = $this->getJson('/api/v1/manager/users/search?q=nonexistentuser12345', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_manager_search_is_case_insensitive(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        User::factory()->create([
+            'name' => 'Alice Johnson',
+            'email' => 'alice@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        // Search with lowercase
+        $response = $this->getJson('/api/v1/manager/users/search?q=alice', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['name' => 'Alice Johnson']);
+
+        // Search with uppercase
+        $response = $this->getJson('/api/v1/manager/users/search?q=ALICE', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['name' => 'Alice Johnson']);
+    }
+
+    public function test_employee_cannot_search_users(): void
+    {
+        $token = $this->employee->createToken('auth-token')->plainTextToken;
+
+        $response = $this->getJson('/api/v1/manager/users/search?q=test', [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_unauthenticated_user_cannot_search_users(): void
+    {
+        $response = $this->getJson('/api/v1/manager/users/search?q=test');
+
+        $response->assertStatus(401);
+    }
 }

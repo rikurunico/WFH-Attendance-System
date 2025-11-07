@@ -210,4 +210,130 @@ class ManagerAttendanceTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_manager_can_filter_attendances_by_user_id(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create another employee and their attendance
+        $employee2 = User::factory()->create([
+            'name' => 'Employee Two',
+            'email' => 'employee2@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        Attendance::factory()->count(5)->create([
+            'user_id' => $this->employee->id,
+            'date' => Carbon::today(),
+        ]);
+
+        Attendance::factory()->count(3)->create([
+            'user_id' => $employee2->id,
+            'date' => Carbon::today(),
+        ]);
+
+        // Filter by first employee
+        $response = $this->getJson("/api/v1/manager/attendances?user_id={$this->employee->id}", [
+            'Authorization' => "Bearer {$token}",
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        // All returned attendances should belong to the first employee
+        $data = $response->json('data');
+        foreach ($data as $attendance) {
+            $this->assertEquals($this->employee->id, $attendance['user_id']);
+        }
+    }
+
+    public function test_manager_can_combine_user_filter_with_date_range(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create another employee
+        $employee2 = User::factory()->create([
+            'name' => 'Employee Two',
+            'email' => 'employee2@example.com',
+            'role' => UserRole::EMPLOYEE,
+        ]);
+
+        // Create attendances for employee 1 in January
+        Attendance::factory()->count(3)->create([
+            'user_id' => $this->employee->id,
+            'date' => Carbon::parse('2024-01-10'),
+        ]);
+
+        // Create attendances for employee 1 in February
+        Attendance::factory()->count(2)->create([
+            'user_id' => $this->employee->id,
+            'date' => Carbon::parse('2024-02-10'),
+        ]);
+
+        // Create attendances for employee 2 in January
+        Attendance::factory()->count(4)->create([
+            'user_id' => $employee2->id,
+            'date' => Carbon::parse('2024-01-15'),
+        ]);
+
+        // Filter by employee 1 and January date range
+        $response = $this->getJson(
+            '/api/v1/manager/attendances?user_id=' . $this->employee->id . 
+            '&start_date=2024-01-01&end_date=2024-01-31',
+            [
+                'Authorization' => "Bearer {$token}",
+            ]
+        );
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        // Should only return employee 1's January attendances (3 + 1 from setUp)
+        $data = $response->json('data');
+        foreach ($data as $attendance) {
+            $this->assertEquals($this->employee->id, $attendance['user_id']);
+            $date = Carbon::parse($attendance['date']);
+            $this->assertTrue($date->between(
+                Carbon::parse('2024-01-01'),
+                Carbon::parse('2024-01-31')
+            ));
+        }
+    }
+
+    public function test_manager_can_use_user_filter_with_pagination(): void
+    {
+        $token = $this->manager->createToken('auth-token')->plainTextToken;
+
+        // Create 25 attendances for the employee
+        Attendance::factory()->count(25)->create([
+            'user_id' => $this->employee->id,
+            'date' => Carbon::today(),
+        ]);
+
+        // Create attendances for another employee (should be filtered out)
+        $employee2 = User::factory()->create(['role' => UserRole::EMPLOYEE]);
+        Attendance::factory()->count(10)->create([
+            'user_id' => $employee2->id,
+            'date' => Carbon::today(),
+        ]);
+
+        $response = $this->getJson(
+            "/api/v1/manager/attendances?user_id={$this->employee->id}&page=1&per_page=10",
+            [
+                'Authorization' => "Bearer {$token}",
+            ]
+        );
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true])
+            ->assertJsonPath('pagination.per_page', 10)
+            ->assertJsonPath('pagination.current_page', 1);
+
+        // Verify all results are for the filtered employee
+        $data = $response->json('data');
+        $this->assertCount(10, $data);
+        foreach ($data as $attendance) {
+            $this->assertEquals($this->employee->id, $attendance['user_id']);
+        }
+    }
 }

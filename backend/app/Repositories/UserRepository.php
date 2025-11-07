@@ -89,5 +89,16 @@ class UserRepository
     {
         return User::where('role', 'manager')->orderBy('name')->get();
     }
+
+    /**
+     * Search users by name.
+     */
+    public function searchByName(string $search, int $limit = 10): Collection
+    {
+        return User::where('name', 'LIKE', "%{$search}%")
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+    }
 }
 

@@ -7,6 +7,7 @@ use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Repositories\UserRepository;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class UserManagementController extends Controller
@@ -120,6 +121,35 @@ class UserManagementController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete user',
+            ], 500);
+        }
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $search = $request->get('q', '');
+            $limit = $request->get('limit', 10);
+
+            if (empty($search)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                ], 200);
+            }
+
+            $users = $this->userRepository->searchByName($search, $limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => UserResource::collection($users),
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Search users failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to search users',
             ], 500);
         }
     }

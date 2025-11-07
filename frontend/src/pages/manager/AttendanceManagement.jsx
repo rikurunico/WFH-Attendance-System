@@ -6,7 +6,7 @@ import { Input } from '../../components/common/Input';
 import { Loading } from '../../components/common/Loading';
 import { Modal } from '../../components/common/Modal';
 import { Pagination } from '../../components/common/Pagination';
-import { getAllAttendances, editAttendance, deleteAttendance, updateTask } from '../../api/manager.api';
+import { getAllAttendances, editAttendance, deleteAttendance, updateTask, searchUsers } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd, formatDateTimeForInput } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Clock, Edit, Trash2, Calendar, User } from 'lucide-react';
@@ -16,6 +16,7 @@ export const AttendanceManagement = () => {
   usePageTitle('Absensi');
   const [loading, setLoading] = useState(true);
   const [attendances, setAttendances] = useState([]);
+  const [users, setUsers] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -23,6 +24,11 @@ export const AttendanceManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [startDate, setStartDate] = useState(getMonthStart());
   const [endDate, setEndDate] = useState(getMonthEnd());
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserName, setSelectedUserName] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [searchingUsers, setSearchingUsers] = useState(false);
   const [pagination, setPagination] = useState({
     current_page: 1,
     last_page: 1,
@@ -47,10 +53,66 @@ export const AttendanceManagement = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debounce user search
+  useEffect(() => {
+    if (userSearchQuery.length < 2) {
+      setUsers([]);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      handleUserSearch(userSearchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userSearchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showUserDropdown && !event.target.closest('.user-search-container')) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserDropdown]);
+
+  const handleUserSearch = async (query) => {
+    try {
+      setSearchingUsers(true);
+      const response = await searchUsers(query, 10);
+      if (response.success) {
+        setUsers(response.data);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const handleSelectUser = (user) => {
+    setSelectedUserId(user.id);
+    setSelectedUserName(user.name);
+    setUserSearchQuery(user.name);
+    setShowUserDropdown(false);
+  };
+
+  const handleClearUserSelection = () => {
+    setSelectedUserId('');
+    setSelectedUserName('');
+    setUserSearchQuery('');
+    setUsers([]);
+  };
+
   const fetchAttendances = async (page = 1, perPage = 10) => {
     try {
       setLoading(true);
-      const response = await getAllAttendances(startDate, endDate, page, perPage);
+      const userId = selectedUserId || null;
+      const response = await getAllAttendances(startDate, endDate, page, perPage, userId);
 
       if (response.success) {
         setAttendances(response.data);
@@ -68,6 +130,15 @@ export const AttendanceManagement = () => {
 
   const handleFilter = () => {
     fetchAttendances(1, pagination.per_page);
+  };
+
+  const handleClearFilter = () => {
+    setStartDate(getMonthStart());
+    setEndDate(getMonthEnd());
+    handleClearUserSelection();
+    setTimeout(() => {
+      fetchAttendances(1, pagination.per_page);
+    }, 100);
   };
 
   const handlePageChange = (page) => {
@@ -246,10 +317,66 @@ export const AttendanceManagement = () => {
           <p className="text-gray-600 mt-1">Kelola semua catatan absensi karyawan</p>
         </div>
 
-        {/* Date Filter */}
+        {/* Filters */}
         <Card>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4">
-            <div className="w-full sm:flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative user-search-container">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Karyawan
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={(e) => {
+                    setUserSearchQuery(e.target.value);
+                    setShowUserDropdown(true);
+                  }}
+                  onFocus={() => setShowUserDropdown(true)}
+                  placeholder="Ketik nama karyawan..."
+                  className="input-field w-full pr-10"
+                />
+                {selectedUserId && (
+                  <button
+                    type="button"
+                    onClick={handleClearUserSelection}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              
+              {/* Dropdown */}
+              {showUserDropdown && userSearchQuery.length >= 2 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {searchingUsers ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      Mencari...
+                    </div>
+                  ) : users.length > 0 ? (
+                    users.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      >
+                        <div className="font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {user.role === 'manager' ? 'Manager' : 'Karyawan'} - {user.email}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      Tidak ada hasil
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tanggal Mulai
               </label>
@@ -260,7 +387,7 @@ export const AttendanceManagement = () => {
                 className="input-field w-full"
               />
             </div>
-            <div className="w-full sm:flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tanggal Akhir
               </label>
@@ -271,14 +398,20 @@ export const AttendanceManagement = () => {
                 className="input-field w-full"
               />
             </div>
-            <div className="w-full sm:w-auto">
-              <Button
-                className="w-full sm:w-auto"
-                onClick={handleFilter}
-              >
-                Terapkan Filter
-              </Button>
-            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3 mt-4">
+            <Button onClick={handleFilter}>
+              Terapkan Filter
+            </Button>
+            <Button onClick={handleClearFilter} variant="secondary">
+              Hapus Filter
+            </Button>
+            {selectedUserName && (
+              <span className="text-sm text-gray-600">
+                Filter: <span className="font-medium">{selectedUserName}</span>
+              </span>
+            )}
           </div>
         </Card>
 

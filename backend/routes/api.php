@@ -76,6 +76,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(fu
         // User Management
         Route::prefix('manager/users')->group(function () {
             Route::get('/', [UserManagementController::class, 'index']);
+            Route::get('/search', [UserManagementController::class, 'search']);
             Route::post('/', [UserManagementController::class, 'store']);
             Route::put('/{id}', [UserManagementController::class, 'update']);
             Route::delete('/{id}', [UserManagementController::class, 'destroy']);

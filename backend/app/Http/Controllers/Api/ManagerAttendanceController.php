@@ -28,11 +28,12 @@ class ManagerAttendanceController extends Controller
             $startDate = $request->get('start_date') ? Carbon::parse($request->get('start_date')) : null;
             $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
             $perPage = $request->get('per_page', 10);
+            $userId = $request->get('user_id') ? (int)$request->get('user_id') : null;
             
             // Validate per_page parameter
             $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
 
-            $attendances = $this->attendanceRepository->getPaginatedInDateRange($startDate, $endDate, $perPage);
+            $attendances = $this->attendanceRepository->getPaginatedInDateRange($startDate, $endDate, $perPage, $userId);
 
             return response()->json([
                 'success' => true,
