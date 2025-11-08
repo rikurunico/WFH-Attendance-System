@@ -13,7 +13,7 @@ import { Users, Plus, Edit, Trash2, Shield, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const UserManagement = () => {
-  usePageTitle('Manajemen Pengguna');
+  usePageTitle('Pengguna');
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -189,7 +189,7 @@ export const UserManagement = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manajemen Pengguna</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Pengguna</h1>
             <p className="text-gray-600 mt-1">Kelola akun karyawan dan manager</p>
           </div>
           <Button
@@ -221,6 +221,9 @@ export const UserManagement = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Jatah Cuti
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sisa Cuti
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Dibuat Pada
@@ -260,6 +263,15 @@ export const UserManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">
                           {user.leave_quota_days || 12} hari
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`text-sm font-semibold ${
+                          user.remaining_leave_days > 5 ? 'text-green-600' : 
+                          user.remaining_leave_days > 2 ? 'text-yellow-600' : 
+                          'text-red-600'
+                        }`}>
+                          {user.remaining_leave_days || 0} hari
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

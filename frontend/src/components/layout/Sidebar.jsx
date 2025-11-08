@@ -26,7 +26,7 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
 
   const managerLinks = [
     { to: '/manager/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/manager/users', icon: Users, label: 'Manajemen Pengguna' },
+    { to: '/manager/users', icon: Users, label: 'Pengguna' },
     { to: '/manager/attendances', icon: Clock, label: 'Absensi' },
     { to: '/manager/daily-attendance-report', icon: FileText, label: 'Laporan Harian' },
     { to: '/manager/monthly-attendance-report', icon: TrendingUp, label: 'Laporan Bulanan' },

@@ -20,6 +20,8 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role->value,
             'leave_quota_days' => $this->leave_quota_days,
+            'approved_leaves_count' => $this->approved_leaves_count ?? 0,
+            'remaining_leave_days' => $this->leave_quota_days - ($this->approved_leaves_count ?? 0),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

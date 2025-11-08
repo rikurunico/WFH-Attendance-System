@@ -21,7 +21,11 @@ class UserRepository
      */
     public function getPaginated(int $perPage = 10)
     {
-        return User::orderBy('name')->paginate($perPage);
+        return User::withCount([
+            'leaves as approved_leaves_count' => function ($query) {
+                $query->where('status', 'approved');
+            }
+        ])->orderBy('name')->paginate($perPage);
     }
 
     /**
