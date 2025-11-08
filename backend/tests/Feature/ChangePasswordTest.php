@@ -8,10 +8,11 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class ChangePasswordTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $user;
     private string $currentPassword = 'password123';

@@ -16,7 +16,12 @@ class HolidayController extends Controller
     {
         try {
             $year = $request->get('year', now()->year);
-            $holidays = Holiday::whereYear('date', $year)->orderBy('date')->get();
+            $teamId = auth()->user()->team_id;
+            
+            $holidays = Holiday::where('team_id', $teamId)
+                ->whereYear('date', $year)
+                ->orderBy('date')
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -35,7 +40,10 @@ class HolidayController extends Controller
     public function store(HolidayRequest $request): JsonResponse
     {
         try {
-            $holiday = Holiday::create($request->validated());
+            $data = $request->validated();
+            $data['team_id'] = auth()->user()->team_id;
+            
+            $holiday = Holiday::create($data);
 
             return response()->json([
                 'success' => true,
@@ -56,6 +64,15 @@ class HolidayController extends Controller
     {
         try {
             $holiday = Holiday::findOrFail($id);
+            
+            // Ensure holiday belongs to the same team
+            if ($holiday->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update this holiday',
+                ], 403);
+            }
+            
             $holiday->update($request->validated());
 
             return response()->json([
@@ -77,6 +94,15 @@ class HolidayController extends Controller
     {
         try {
             $holiday = Holiday::findOrFail($id);
+            
+            // Ensure holiday belongs to the same team
+            if ($holiday->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to delete this holiday',
+                ], 403);
+            }
+            
             $holiday->delete();
 
             return response()->json([

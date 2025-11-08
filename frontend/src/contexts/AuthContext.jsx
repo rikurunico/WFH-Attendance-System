@@ -19,6 +19,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const setSession = (userData, token) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const response = await loginApi(email, password);
@@ -26,9 +34,7 @@ export const AuthProvider = ({ children }) => {
       if (response.success) {
         const { user: userData, token } = response.data;
         
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', token);
+        setSession(userData, token);
         
         toast.success(response.message || 'Login berhasil');
         return { success: true, user: userData };
@@ -57,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
+    setSession,
     loading,
     isAuthenticated: !!user,
     isEmployee: user?.role === 'employee',

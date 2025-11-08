@@ -9,23 +9,35 @@ use Illuminate\Support\Facades\Hash;
 class UserRepository
 {
     /**
-     * Get all users.
+     * Get all users for a team.
      */
-    public function getAll(): Collection
+    public function getAll(?int $teamId = null): Collection
     {
-        return User::orderBy('name')->get();
+        $query = User::query();
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        return $query->orderBy('name')->get();
     }
 
     /**
-     * Get paginated users.
+     * Get paginated users for a team.
      */
-    public function getPaginated(int $perPage = 10)
+    public function getPaginated(int $perPage = 10, ?int $teamId = null)
     {
-        return User::withCount([
+        $query = User::withCount([
             'leaves as approved_leaves_count' => function ($query) {
                 $query->where('status', 'approved');
             }
-        ])->orderBy('name')->paginate($perPage);
+        ]);
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        return $query->orderBy('name')->paginate($perPage);
     }
 
     /**
@@ -79,28 +91,45 @@ class UserRepository
     }
 
     /**
-     * Get all employees.
+     * Get all employees for a team.
      */
-    public function getEmployees(): Collection
+    public function getEmployees(?int $teamId = null): Collection
     {
-        return User::where('role', 'employee')->orderBy('name')->get();
+        $query = User::where('role', 'employee');
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        return $query->orderBy('name')->get();
     }
 
     /**
-     * Get all managers.
+     * Get all managers for a team.
      */
-    public function getManagers(): Collection
+    public function getManagers(?int $teamId = null): Collection
     {
-        return User::where('role', 'manager')->orderBy('name')->get();
+        $query = User::where('role', 'manager');
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        return $query->orderBy('name')->get();
     }
 
     /**
-     * Search users by name.
+     * Search users by name within a team.
      */
-    public function searchByName(string $search, int $limit = 10): Collection
+    public function searchByName(string $search, int $limit = 10, ?int $teamId = null): Collection
     {
-        return User::where('name', 'LIKE', "%{$search}%")
-            ->orderBy('name')
+        $query = User::where('name', 'LIKE', "%{$search}%");
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        return $query->orderBy('name')
             ->limit($limit)
             ->get();
     }

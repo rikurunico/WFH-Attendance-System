@@ -10,10 +10,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class AttendanceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $user;
 
@@ -21,10 +22,9 @@ class AttendanceTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = User::factory()->create([
+        $this->user = $this->createEmployee([
             'email' => 'employee@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 
@@ -61,7 +61,7 @@ class AttendanceTest extends TestCase
 
     public function test_employee_cannot_check_in_on_holiday(): void
     {
-        Holiday::create([
+        $this->createHoliday([
             'date' => Carbon::today(),
             'name' => 'Test Holiday',
             'description' => 'Test',

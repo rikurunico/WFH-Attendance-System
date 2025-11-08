@@ -19,8 +19,11 @@ class ActivityLogFactory extends Factory
      */
     public function definition(): array
     {
+        $user = User::factory()->create();
+        
         return [
-            'user_id' => User::factory(),
+            'team_id' => $user->team_id,
+            'user_id' => $user->id,
             'action' => ActivityType::CHECK_IN,
             'description' => fake()->sentence(),
             'ip_address' => fake()->ipv4(),

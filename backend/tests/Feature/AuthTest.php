@@ -7,10 +7,11 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class AuthTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     public function test_user_can_login_with_valid_credentials(): void
     {
@@ -106,10 +107,9 @@ class AuthTest extends TestCase
 
     public function test_manager_can_login(): void
     {
-        $manager = User::factory()->create([
+        $manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [

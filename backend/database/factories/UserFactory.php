@@ -24,11 +24,13 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'team_id' => \App\Models\Team::factory(),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'employee',
+            'leave_quota_days' => 12,
             'remember_token' => Str::random(10),
         ];
     }

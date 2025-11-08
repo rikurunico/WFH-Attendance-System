@@ -11,10 +11,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class ManagerTaskTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $manager;
     private User $employee;
@@ -25,15 +26,13 @@ class ManagerTaskTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = User::factory()->create([
+        $this->manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
-        $this->employee = User::factory()->create([
+        $this->employee = $this->createEmployee([
             'email' => 'employee@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
         $this->attendance = Attendance::factory()->create([

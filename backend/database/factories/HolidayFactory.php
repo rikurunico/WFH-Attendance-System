@@ -19,6 +19,7 @@ class HolidayFactory extends Factory
     public function definition(): array
     {
         return [
+            'team_id' => \App\Models\Team::factory(),
             'date' => Carbon::now()->addMonths(rand(1, 6))->format('Y-m-d'),
             'name' => fake()->words(2, true),
             'description' => fake()->sentence(),

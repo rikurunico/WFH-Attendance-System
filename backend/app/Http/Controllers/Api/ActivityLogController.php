@@ -39,12 +39,15 @@ class ActivityLogController extends Controller
                 }
             }
 
+            $teamId = auth()->user()->team_id;
+            
             $logs = $this->activityLogRepository->getPaginatedWithFilters(
                 $userId ? (int)$userId : null,
                 $activityType,
                 $startDate,
                 $endDate,
-                $perPage
+                $perPage,
+                $teamId
             );
 
             return response()->json([

@@ -6,6 +6,7 @@ import { useAuth } from './hooks/useAuth';
 
 // Auth Pages
 import { Login } from './pages/auth/Login';
+import { Register } from './pages/auth/Register';
 
 // Employee Pages
 import { EmployeeDashboard } from './pages/employee/Dashboard';
@@ -22,6 +23,7 @@ import { MonthlyAttendanceReport } from './pages/manager/MonthlyAttendanceReport
 import { HolidayManagement } from './pages/manager/HolidayManagement';
 import { LeaveApproval } from './pages/manager/LeaveApproval';
 import { ActivityLogs } from './pages/manager/ActivityLogs';
+import { TeamSettings } from './pages/manager/TeamSettings';
 
 const RootRedirect = () => {
   const { user, loading } = useAuth();
@@ -76,6 +78,7 @@ function App() {
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Employee Routes */}
           <Route
@@ -173,6 +176,14 @@ function App() {
             element={
               <PrivateRoute requiredRole="manager">
                 <ActivityLogs />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/manager/team-settings"
+            element={
+              <PrivateRoute requiredRole="manager">
+                <TeamSettings />
               </PrivateRoute>
             }
           />

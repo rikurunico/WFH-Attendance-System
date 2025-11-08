@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Input } from '../../components/common/Input';
@@ -78,7 +78,7 @@ export const Login = () => {
               <LogIn size={32} className="text-primary-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              TSD
+              WFH
             </h1>
             <p className="text-gray-600">Masuk ke akun Anda</p>
           </div>
@@ -112,6 +112,13 @@ export const Login = () => {
             >
               {loading ? 'Masuk...' : 'Masuk'}
             </Button>
+
+            <p className="text-center text-sm text-gray-600 mt-4">
+              Belum punya akun?{' '}
+              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+                Daftar sebagai Manager
+              </Link>
+            </p>
           </form>
         </div>
       </div>

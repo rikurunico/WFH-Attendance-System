@@ -29,11 +29,12 @@ class ManagerAttendanceController extends Controller
             $endDate = $request->get('end_date') ? Carbon::parse($request->get('end_date')) : null;
             $perPage = $request->get('per_page', 10);
             $userId = $request->get('user_id') ? (int)$request->get('user_id') : null;
+            $teamId = auth()->user()->team_id;
             
             // Validate per_page parameter
             $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
 
-            $attendances = $this->attendanceRepository->getPaginatedInDateRange($startDate, $endDate, $perPage, $userId);
+            $attendances = $this->attendanceRepository->getPaginatedInDateRange($startDate, $endDate, $perPage, $userId, $teamId);
 
             return response()->json([
                 'success' => true,
@@ -67,6 +68,14 @@ class ManagerAttendanceController extends Controller
                     'success' => false,
                     'message' => 'Attendance not found',
                 ], 404);
+            }
+
+            // Ensure attendance belongs to user in the same team
+            if ($attendance->user->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to edit this attendance',
+                ], 403);
             }
 
             $validated = $request->validated();

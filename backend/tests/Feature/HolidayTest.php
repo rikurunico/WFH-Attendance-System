@@ -9,10 +9,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class HolidayTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $manager;
     private User $employee;
@@ -21,16 +22,14 @@ class HolidayTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = User::factory()->create([
+        $this->manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
-        $this->employee = User::factory()->create([
+        $this->employee = $this->createEmployee([
             'email' => 'employee@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 
@@ -38,7 +37,7 @@ class HolidayTest extends TestCase
     {
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
-        Holiday::factory()->create([
+        $this->createHoliday([
             'date' => Carbon::parse('2024-12-25'),
             'name' => 'Christmas Day',
         ]);
@@ -100,7 +99,7 @@ class HolidayTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        $holiday = Holiday::factory()->create([
+        $holiday = $this->createHoliday([
             'date' => Carbon::parse('2024-12-25'),
             'name' => 'Christmas Day',
         ]);
@@ -126,7 +125,7 @@ class HolidayTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        $holiday = Holiday::factory()->create();
+        $holiday = $this->createHoliday();
 
         $response = $this->deleteJson("/api/v1/manager/holidays/{$holiday->id}", [], [
             'Authorization' => "Bearer {$token}",
@@ -157,7 +156,7 @@ class HolidayTest extends TestCase
     public function test_employee_cannot_update_holiday(): void
     {
         $token = $this->employee->createToken('auth-token')->plainTextToken;
-        $holiday = Holiday::factory()->create();
+        $holiday = $this->createHoliday();
 
         $response = $this->putJson("/api/v1/manager/holidays/{$holiday->id}", [
             'date' => '2024-12-25',
@@ -174,7 +173,7 @@ class HolidayTest extends TestCase
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
         // Create holiday for today
-        Holiday::factory()->create([
+        $this->createHoliday([
             'date' => Carbon::today(),
             'name' => 'Test Holiday',
         ]);

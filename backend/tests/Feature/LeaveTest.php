@@ -10,10 +10,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class LeaveTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $employee;
 
@@ -97,12 +98,12 @@ class LeaveTest extends TestCase
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
         // Create leave requests
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'status' => LeaveStatus::PENDING,
         ]);
 
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'status' => LeaveStatus::APPROVED,
         ]);
@@ -133,7 +134,7 @@ class LeaveTest extends TestCase
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
         // Create approved leave for today
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => Carbon::today(),
             'end_date' => Carbon::today(),
@@ -178,14 +179,14 @@ class LeaveTest extends TestCase
         $baseDate = Carbon::now()->addDays(30); // Start 30 days from now
         
         // Create approved leaves that use up 10 days out of 12 in the SAME YEAR
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => $baseDate->copy(),
             'end_date' => $baseDate->copy()->addDays(4), // 5 days
             'status' => LeaveStatus::APPROVED,
         ]);
 
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => $baseDate->copy()->addDays(20),
             'end_date' => $baseDate->copy()->addDays(24), // 5 days
@@ -213,7 +214,7 @@ class LeaveTest extends TestCase
 
         // Create approved leave for 3 days in next month
         $nextMonth = Carbon::now()->addMonth()->startOfMonth();
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => $nextMonth->copy()->addDays(1),
             'end_date' => $nextMonth->copy()->addDays(3),
@@ -243,7 +244,7 @@ class LeaveTest extends TestCase
         $startDate = Carbon::now()->addMonths(8)->startOfMonth()->addDays(15);
         $endDate = $startDate->copy(); // Only 1 day
         
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => $startDate,
             'end_date' => $endDate,
@@ -270,14 +271,14 @@ class LeaveTest extends TestCase
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
         // Create some leaves
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => Carbon::now()->startOfYear()->addDays(10),
             'end_date' => Carbon::now()->startOfYear()->addDays(12),
             'status' => LeaveStatus::APPROVED,
         ]);
 
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => Carbon::now()->startOfYear()->addDays(20),
             'end_date' => Carbon::now()->startOfYear()->addDays(21),
@@ -316,7 +317,7 @@ class LeaveTest extends TestCase
         $token = $this->employee->createToken('auth-token')->plainTextToken;
 
         // Create pending leave for 10 days
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee->id,
             'start_date' => Carbon::now()->addMonths(1)->startOfMonth(),
             'end_date' => Carbon::now()->addMonths(1)->startOfMonth()->addDays(9),

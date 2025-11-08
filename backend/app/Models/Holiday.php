@@ -31,4 +31,12 @@ class Holiday extends Model
             'date' => 'date',
         ];
     }
+
+    /**
+     * Get the team that owns the holiday.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
 }

@@ -9,10 +9,11 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class ActivityLogTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $manager;
     private User $employee;
@@ -21,15 +22,13 @@ class ActivityLogTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = User::factory()->create([
+        $this->manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
-        $this->employee = User::factory()->create([
+        $this->employee = $this->createEmployee([
             'email' => 'employee@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 
@@ -38,13 +37,13 @@ class ActivityLogTest extends TestCase
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
         // Create some activity logs
-        ActivityLog::factory()->create([
+        $this->createActivityLog([
             'user_id' => $this->employee->id,
             'action' => ActivityType::CHECK_IN,
             'description' => 'User checked in',
         ]);
 
-        ActivityLog::factory()->create([
+        $this->createActivityLog([
             'user_id' => $this->employee->id,
             'action' => ActivityType::CHECK_OUT,
             'description' => 'User checked out',
@@ -106,7 +105,7 @@ class ActivityLogTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        ActivityLog::factory()->create([
+        $this->createActivityLog([
             'user_id' => $this->employee->id,
             'action' => ActivityType::CHECK_IN,
         ]);
@@ -123,7 +122,7 @@ class ActivityLogTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        ActivityLog::factory()->create([
+        $this->createActivityLog([
             'user_id' => $this->employee->id,
             'action' => ActivityType::CHECK_IN,
         ]);
@@ -140,7 +139,7 @@ class ActivityLogTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        ActivityLog::factory()->create([
+        $this->createActivityLog([
             'user_id' => $this->employee->id,
             'action' => ActivityType::CHECK_IN,
             'created_at' => now(),

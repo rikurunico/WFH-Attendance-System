@@ -16,6 +16,7 @@ class ActivityLogRepository
     public function create(User $user, ActivityType $action, string $description, ?string $ipAddress = null, ?string $userAgent = null): ActivityLog
     {
         return ActivityLog::create([
+            'team_id' => $user->team_id,
             'user_id' => $user->id,
             'action' => $action,
             'description' => $description,
@@ -54,9 +55,13 @@ class ActivityLogRepository
     /**
      * Get paginated activity logs with filters.
      */
-    public function getPaginatedWithFilters(?int $userId = null, ?ActivityType $action = null, ?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10)
+    public function getPaginatedWithFilters(?int $userId = null, ?ActivityType $action = null, ?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10, ?int $teamId = null)
     {
         $query = ActivityLog::with('user');
+
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
 
         if ($userId) {
             $query->where('user_id', $userId);

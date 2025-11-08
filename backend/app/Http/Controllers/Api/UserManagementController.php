@@ -20,11 +20,12 @@ class UserManagementController extends Controller
     {
         try {
             $perPage = request()->get('per_page', 10);
+            $teamId = auth()->user()->team_id;
             
             // Validate per_page parameter
             $perPage = in_array($perPage, [10, 50, 100, 1000]) ? $perPage : 10;
             
-            $users = $this->userRepository->getPaginated($perPage);
+            $users = $this->userRepository->getPaginated($perPage, $teamId);
 
             return response()->json([
                 'success' => true,
@@ -51,7 +52,15 @@ class UserManagementController extends Controller
     public function store(UserRequest $request): JsonResponse
     {
         try {
-            $user = $this->userRepository->create($request->validated());
+            $data = $request->validated();
+            $data['team_id'] = auth()->user()->team_id;
+            
+            // If leave_quota_days is not set, use team's default
+            if (!isset($data['leave_quota_days'])) {
+                $data['leave_quota_days'] = auth()->user()->team->default_leave_quota_days;
+            }
+            
+            $user = $this->userRepository->create($data);
 
             return response()->json([
                 'success' => true,
@@ -78,6 +87,14 @@ class UserManagementController extends Controller
                     'success' => false,
                     'message' => 'User not found',
                 ], 404);
+            }
+
+            // Ensure user belongs to the same team
+            if ($user->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update this user',
+                ], 403);
             }
 
             $this->userRepository->update($user, $request->validated());
@@ -109,6 +126,14 @@ class UserManagementController extends Controller
                 ], 404);
             }
 
+            // Ensure user belongs to the same team
+            if ($user->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to delete this user',
+                ], 403);
+            }
+
             $this->userRepository->delete($user);
 
             return response()->json([
@@ -130,6 +155,7 @@ class UserManagementController extends Controller
         try {
             $search = $request->get('q', '');
             $limit = $request->get('limit', 10);
+            $teamId = auth()->user()->team_id;
 
             if (empty($search)) {
                 return response()->json([
@@ -138,7 +164,7 @@ class UserManagementController extends Controller
                 ], 200);
             }
 
-            $users = $this->userRepository->searchByName($search, $limit);
+            $users = $this->userRepository->searchByName($search, $limit, $teamId);
 
             return response()->json([
                 'success' => true,

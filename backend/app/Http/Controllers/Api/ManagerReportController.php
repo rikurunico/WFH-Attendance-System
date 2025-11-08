@@ -21,8 +21,9 @@ class ManagerReportController extends Controller
         try {
             $date = $request->get('date', Carbon::today()->format('Y-m-d'));
             $date = Carbon::parse($date);
+            $teamId = auth()->user()->team_id;
 
-            $dashboard = $this->reportService->getManagerDashboard($date);
+            $dashboard = $this->reportService->getManagerDashboard($date, $teamId);
 
             return response()->json([
                 'success' => true,
@@ -41,7 +42,15 @@ class ManagerReportController extends Controller
     public function employeeReport(Request $request, int $userId): JsonResponse
     {
         try {
+            $manager = auth()->user();
             $employee = User::findOrFail($userId);
+
+            if ($employee->team_id !== $manager->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this employee report',
+                ], 403);
+            }
 
             $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
             $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
@@ -71,7 +80,9 @@ class ManagerReportController extends Controller
             $date = $request->get('date', Carbon::today()->format('Y-m-d'));
             $date = Carbon::parse($date);
 
-            $report = $this->reportService->getDailyAttendanceReport($date);
+            $teamId = auth()->user()->team_id;
+
+            $report = $this->reportService->getDailyAttendanceReport($date, $teamId);
 
             return response()->json([
                 'success' => true,
@@ -96,7 +107,9 @@ class ManagerReportController extends Controller
             $startDate = Carbon::parse($startDate);
             $endDate = Carbon::parse($endDate);
 
-            $report = $this->reportService->getMonthlyAttendanceReport($startDate, $endDate);
+            $teamId = auth()->user()->team_id;
+
+            $report = $this->reportService->getMonthlyAttendanceReport($startDate, $endDate, $teamId);
 
             return response()->json([
                 'success' => true,

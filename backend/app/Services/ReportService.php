@@ -112,11 +112,17 @@ class ReportService
     /**
      * Get manager dashboard data.
      */
-    public function getManagerDashboard(?Carbon $date = null): array
+    public function getManagerDashboard(?Carbon $date = null, ?int $teamId = null): array
     {
         $targetDate = $date ?? Carbon::today();
 
-        $allEmployees = User::where('role', 'employee')->get();
+        $query = User::where('role', 'employee');
+        
+        if ($teamId) {
+            $query->where('team_id', $teamId);
+        }
+        
+        $allEmployees = $query->get();
 
         $employees = [];
         $checkedInNow = 0;
@@ -217,11 +223,17 @@ class ReportService
      * Get daily attendance report for all employees on a specific date.
      * Shows employee list with total hours, overtime, sessions, and tasks.
      */
-    public function getDailyAttendanceReport(Carbon $date): array
+    public function getDailyAttendanceReport(Carbon $date, ?int $teamId = null): array
     {
         $requiredWorkHours = config('attendance.required_work_hours', 7);
-        
-        $allEmployees = User::where('role', 'employee')->get();
+
+        $employeeQuery = User::where('role', 'employee');
+
+        if ($teamId) {
+            $employeeQuery->where('team_id', $teamId);
+        }
+
+        $allEmployees = $employeeQuery->get();
         $employeeReports = [];
 
         foreach ($allEmployees as $employee) {
@@ -319,11 +331,17 @@ class ReportService
      * Get monthly attendance report for all employees within a date range.
      * Shows employee list with total work hours. Clicking employee shows daily details.
      */
-    public function getMonthlyAttendanceReport(Carbon $startDate, Carbon $endDate): array
+    public function getMonthlyAttendanceReport(Carbon $startDate, Carbon $endDate, ?int $teamId = null): array
     {
         $requiredWorkHours = config('attendance.required_work_hours', 7);
-        
-        $allEmployees = User::where('role', 'employee')->get();
+
+        $employeeQuery = User::where('role', 'employee');
+
+        if ($teamId) {
+            $employeeQuery->where('team_id', $teamId);
+        }
+
+        $allEmployees = $employeeQuery->get();
         $employeeReports = [];
 
         foreach ($allEmployees as $employee) {

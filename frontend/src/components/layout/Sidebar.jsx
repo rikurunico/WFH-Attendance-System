@@ -10,7 +10,8 @@ import {
   Activity,
   TrendingUp,
   X,
-  Key
+  Key,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -33,6 +34,7 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
     { to: '/manager/leaves', icon: ClipboardList, label: 'Persetujuan Cuti' },
     { to: '/manager/holidays', icon: Calendar, label: 'Hari Libur' },
     { to: '/manager/activity-logs', icon: Activity, label: 'Log Aktivitas' },
+    { to: '/manager/team-settings', icon: Building2, label: 'Pengaturan Tim' },
   ];
 
   const links = isManager ? managerLinks : employeeLinks;

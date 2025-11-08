@@ -33,9 +33,11 @@ class AttendanceService
             throw new \Exception('You have already checked in. Please check out first.');
         }
 
-        // Check if today is a holiday
+        // Check if today is a holiday for this team
         $today = Carbon::today();
-        $holiday = Holiday::whereDate('date', $today)->first();
+        $holiday = Holiday::where('team_id', $user->team_id)
+            ->whereDate('date', $today)
+            ->first();
         if ($holiday) {
             throw new \Exception("Today is a holiday: {$holiday->name}. You cannot check in.");
         }

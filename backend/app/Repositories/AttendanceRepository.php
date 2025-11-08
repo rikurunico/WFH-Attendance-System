@@ -111,11 +111,17 @@ class AttendanceRepository
     }
 
     /**
-     * Get all attendances (for manager).
+     * Get all attendances (for manager) filtered by team.
      */
-    public function getAllInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null): Collection
+    public function getAllInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, ?int $teamId = null): Collection
     {
         $query = Attendance::with(['user', 'tasks']);
+
+        if ($teamId) {
+            $query->whereHas('user', function ($q) use ($teamId) {
+                $q->where('team_id', $teamId);
+            });
+        }
 
         if ($startDate && $endDate) {
             $query->whereBetween('date', [$startDate, $endDate]);
@@ -127,11 +133,17 @@ class AttendanceRepository
     }
 
     /**
-     * Get paginated attendances (for manager).
+     * Get paginated attendances (for manager) filtered by team.
      */
-    public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10, ?int $userId = null)
+    public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10, ?int $userId = null, ?int $teamId = null)
     {
         $query = Attendance::with(['user', 'tasks']);
+
+        if ($teamId) {
+            $query->whereHas('user', function ($q) use ($teamId) {
+                $q->where('team_id', $teamId);
+            });
+        }
 
         if ($startDate && $endDate) {
             $query->whereBetween('date', [$startDate, $endDate]);

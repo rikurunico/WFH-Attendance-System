@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
+use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\ChangePasswordController;
 use App\Http\Controllers\Api\EmployeeReportController;
 use App\Http\Controllers\Api\HolidayController;
@@ -13,8 +14,10 @@ use App\Http\Controllers\Api\ManagerLeaveController;
 use App\Http\Controllers\Api\ManagerReportController;
 use App\Http\Controllers\Api\ManagerTaskController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TeamSettingsController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureTeamAccess;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,15 +29,22 @@ use Illuminate\Support\Facades\Route;
 // Authentication routes (no auth required)
 Route::prefix('v1/auth')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/register', [RegisterController::class, 'register']);
 });
 
 // Protected routes
-Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity', EnsureTeamAccess::class])->group(function () {
     // Authentication
     Route::post('/auth/logout', [LogoutController::class, 'logout']);
     
     // Change Password (available for all authenticated users)
     Route::post('/change-password', [ChangePasswordController::class, 'changePassword']);
+    
+    // Team Settings (Manager only)
+    Route::middleware('role:manager')->group(function () {
+        Route::get('/team/settings', [TeamSettingsController::class, 'show']);
+        Route::put('/team/settings', [TeamSettingsController::class, 'update']);
+    });
 
     // Attendance routes (Employee)
     Route::prefix('attendance')->middleware('role:employee')->group(function () {

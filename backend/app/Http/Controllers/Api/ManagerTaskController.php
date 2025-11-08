@@ -53,6 +53,14 @@ class ManagerTaskController extends Controller
                 ], 404);
             }
 
+            // Ensure task belongs to user in the same team
+            if ($task->attendance->user->team_id !== auth()->user()->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update this task',
+                ], 403);
+            }
+
             $validated = $validator->validated();
 
             // Validate blocker reason is required if task is not completed

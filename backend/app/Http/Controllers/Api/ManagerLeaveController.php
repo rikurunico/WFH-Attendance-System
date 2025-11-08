@@ -20,7 +20,13 @@ class ManagerLeaveController extends Controller
     {
         try {
             $status = $request->get('status');
-            $query = Leave::with(['user', 'approver'])->orderBy('created_at', 'desc');
+            $teamId = auth()->user()->team_id;
+
+            $query = Leave::with(['user', 'approver'])
+                ->whereHas('user', function ($q) use ($teamId) {
+                    $q->where('team_id', $teamId);
+                })
+                ->orderBy('created_at', 'desc');
 
             if ($status) {
                 $query->where('status', $status);
@@ -47,6 +53,14 @@ class ManagerLeaveController extends Controller
         try {
             $leave = Leave::findOrFail($id);
             $manager = auth()->user();
+
+            // Ensure leave belongs to user in the same team
+            if ($leave->user->team_id !== $manager->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to approve this leave request',
+                ], 403);
+            }
 
             $leave = $this->leaveService->approveLeave(
                 $leave,
@@ -75,6 +89,13 @@ class ManagerLeaveController extends Controller
         try {
             $leave = Leave::findOrFail($id);
             $manager = auth()->user();
+
+            if ($leave->user->team_id !== $manager->team_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to reject this leave request',
+                ], 403);
+            }
 
             $leave = $this->leaveService->rejectLeave(
                 $leave,

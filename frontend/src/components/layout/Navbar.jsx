@@ -35,7 +35,7 @@ export const Navbar = ({ onMenuClick, onSidebarToggle, sidebarCollapsed = false 
               )}
             </button>
             <h1 className="ml-2 text-xl font-bold text-primary-600">
-              TSD
+              WFH
             </h1>
           </div>
 

@@ -10,10 +10,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class EmployeeReportTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $employee;
 
@@ -21,10 +22,9 @@ class EmployeeReportTest extends TestCase
     {
         parent::setUp();
 
-        $this->employee = User::factory()->create([
+        $this->employee = $this->createEmployee([
             'email' => 'employee@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 

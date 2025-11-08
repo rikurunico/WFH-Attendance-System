@@ -3,14 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class UserManagementTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $manager;
     private User $employee;
@@ -19,15 +21,13 @@ class UserManagementTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = User::factory()->create([
+        $this->manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
-        $this->employee = User::factory()->create([
+        $this->employee = $this->createEmployee([
             'email' => 'employee@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 
@@ -208,9 +208,7 @@ class UserManagementTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        $userToDelete = User::factory()->create([
-            'role' => UserRole::EMPLOYEE,
-        ]);
+        $userToDelete = $this->createEmployee();
 
         $response = $this->deleteJson("/api/v1/manager/users/{$userToDelete->id}", [], [
             'Authorization' => "Bearer {$token}",
@@ -274,22 +272,19 @@ class UserManagementTest extends TestCase
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
         // Create users with specific names
-        User::factory()->create([
+        $this->createEmployee([
             'name' => 'John Doe',
             'email' => 'john.doe@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
-        User::factory()->create([
+        $this->createEmployee([
             'name' => 'Jane Smith',
             'email' => 'jane.smith@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
-        User::factory()->create([
+        $this->createEmployee([
             'name' => 'Johnny Walker',
             'email' => 'johnny.walker@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
         // Search for "john" should return John Doe and Johnny Walker
@@ -310,10 +305,9 @@ class UserManagementTest extends TestCase
 
         // Create 15 users with "Test" in their name
         for ($i = 1; $i <= 15; $i++) {
-            User::factory()->create([
+            $this->createEmployee([
                 'name' => "Test User {$i}",
                 'email' => "testuser{$i}@example.com",
-                'role' => UserRole::EMPLOYEE,
             ]);
         }
 
@@ -357,10 +351,9 @@ class UserManagementTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        User::factory()->create([
+        $this->createEmployee([
             'name' => 'Alice Johnson',
             'email' => 'alice@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
         // Search with lowercase

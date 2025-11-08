@@ -11,10 +11,11 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Tests\Traits\CreatesTeamUsers;
 
 class ManagerDashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesTeamUsers;
 
     private User $manager;
     private User $employee1;
@@ -24,20 +25,17 @@ class ManagerDashboardTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = User::factory()->create([
+        $this->manager = $this->createManager([
             'email' => 'manager@example.com',
             'password' => Hash::make('password123'),
-            'role' => UserRole::MANAGER,
         ]);
 
-        $this->employee1 = User::factory()->create([
+        $this->employee1 = $this->createEmployee([
             'email' => 'employee1@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
 
-        $this->employee2 = User::factory()->create([
+        $this->employee2 = $this->createEmployee([
             'email' => 'employee2@example.com',
-            'role' => UserRole::EMPLOYEE,
         ]);
     }
 
@@ -127,7 +125,7 @@ class ManagerDashboardTest extends TestCase
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
         // Create approved leave for today
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee1->id,
             'start_date' => Carbon::today(),
             'end_date' => Carbon::today(),
@@ -284,7 +282,7 @@ class ManagerDashboardTest extends TestCase
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
         // Create approved leave for employee1
-        Leave::factory()->create([
+        $this->createLeave([
             'user_id' => $this->employee1->id,
             'start_date' => Carbon::today(),
             'end_date' => Carbon::today(),

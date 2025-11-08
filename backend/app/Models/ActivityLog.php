@@ -24,6 +24,7 @@ class ActivityLog extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'team_id',
         'user_id',
         'action',
         'description',
@@ -51,5 +52,13 @@ class ActivityLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the team that owns the activity log.
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 }
