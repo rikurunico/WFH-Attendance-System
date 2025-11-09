@@ -9,6 +9,10 @@ use Illuminate\Support\Str;
 
 class Team extends Model
 {
+    public const DEFAULT_REQUIRED_WORK_HOURS = 7.0;
+    public const DEFAULT_LEAVE_QUOTA_DAYS = 12;
+    public const DEFAULT_MAX_LEAVE_DAYS_PER_MONTH = 5;
+
     use HasFactory;
 
     /**

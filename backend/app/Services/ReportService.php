@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Team;
 use App\Models\User;
 use App\Repositories\AttendanceRepository;
 use Carbon\Carbon;
@@ -18,6 +19,9 @@ class ReportService
      */
     public function getEmployeeReport(User $user, Carbon $startDate, Carbon $endDate): array
     {
+        $user->loadMissing('team');
+        $requiredWorkHours = $user->team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
+
         $attendances = $this->attendanceRepository->getByUserInDateRange($user, $startDate, $endDate);
 
         // Group by date
@@ -71,8 +75,6 @@ class ReportService
                 $totalTasks += $attendance->tasks->count();
             }
 
-            $requiredWorkHours = config('attendance.required_work_hours', 7);
-            
             $status = 'complete';
             if ($dailyTotalHours < $requiredWorkHours) {
                 $status = 'incomplete';
@@ -89,7 +91,6 @@ class ReportService
             ];
         }
 
-        $requiredWorkHours = config('attendance.required_work_hours', 7);
         $averageHoursPerDay = $totalDaysWorked > 0 ? round($totalHours / $totalDaysWorked, 2) : 0;
         $requiredHours = $totalDaysWorked * $requiredWorkHours;
         $overtimeHours = max(0, $totalHours - $requiredHours);
@@ -225,7 +226,8 @@ class ReportService
      */
     public function getDailyAttendanceReport(Carbon $date, ?int $teamId = null): array
     {
-        $requiredWorkHours = config('attendance.required_work_hours', 7);
+        $team = $teamId ? Team::find($teamId) : null;
+        $requiredWorkHours = $team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
 
         $employeeQuery = User::where('role', 'employee');
 
@@ -333,7 +335,8 @@ class ReportService
      */
     public function getMonthlyAttendanceReport(Carbon $startDate, Carbon $endDate, ?int $teamId = null): array
     {
-        $requiredWorkHours = config('attendance.required_work_hours', 7);
+        $team = $teamId ? Team::find($teamId) : null;
+        $requiredWorkHours = $team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
 
         $employeeQuery = User::where('role', 'employee');
 

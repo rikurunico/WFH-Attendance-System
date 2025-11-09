@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
@@ -65,7 +66,9 @@ class UserRepository
         
         // Set default leave quota if not provided
         if (!isset($data['leave_quota_days'])) {
-            $data['leave_quota_days'] = config('attendance.default_leave_quota_days', 12);
+            $teamId = $data['team_id'] ?? null;
+            $teamDefault = $teamId ? Team::find($teamId)?->getDefaultLeaveQuotaDays() : null;
+            $data['leave_quota_days'] = $teamDefault ?? Team::DEFAULT_LEAVE_QUOTA_DAYS;
         }
         
         return User::create($data);

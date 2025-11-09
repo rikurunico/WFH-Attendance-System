@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ActivityType;
 use App\Enums\LeaveStatus;
 use App\Models\Leave;
+use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -22,6 +23,8 @@ class LeaveService
      */
     public function requestLeave(User $user, array $data, ?Request $request = null): Leave
     {
+        $user->loadMissing('team');
+
         $startDate = Carbon::parse($data['start_date']);
         $endDate = Carbon::parse($data['end_date']);
 
@@ -114,7 +117,7 @@ class LeaveService
      */
     private function validateMonthlyLimit(User $user, Carbon $startDate, Carbon $endDate, int $requestedDays): void
     {
-        $maxPerMonth = config('attendance.max_leave_days_per_month', 5);
+        $maxPerMonth = $user->team?->getMaxLeaveDaysPerMonth() ?? Team::DEFAULT_MAX_LEAVE_DAYS_PER_MONTH;
 
         // Get all months covered by this leave request
         $months = [];
@@ -200,6 +203,8 @@ class LeaveService
      */
     public function getLeaveSummary(User $user, ?int $year = null): array
     {
+        $user->loadMissing('team');
+
         $year = $year ?? Carbon::now()->year;
 
         $approvedLeaves = Leave::where('user_id', $user->id)
@@ -229,7 +234,7 @@ class LeaveService
             'used_days' => $usedDays,
             'pending_days' => $pendingDays,
             'remaining_days' => max(0, $remaining),
-            'max_per_month' => config('attendance.max_leave_days_per_month', 5),
+            'max_per_month' => $user->team?->getMaxLeaveDaysPerMonth() ?? Team::DEFAULT_MAX_LEAVE_DAYS_PER_MONTH,
         ];
     }
 

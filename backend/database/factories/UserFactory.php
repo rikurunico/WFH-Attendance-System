@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -30,7 +31,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'employee',
-            'leave_quota_days' => 12,
+            'leave_quota_days' => Team::DEFAULT_LEAVE_QUOTA_DAYS,
             'remember_token' => Str::random(10),
         ];
     }

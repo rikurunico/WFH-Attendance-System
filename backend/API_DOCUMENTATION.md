@@ -546,7 +546,7 @@ GET /api/v1/reports/my-report?start_date=2024-01-01&end_date=2024-01-31
 
 **Business Rules:**
 - **Annual Quota**: Each employee has an annual leave quota (default: 12 days, configurable per employee)
-- **Monthly Limit**: Maximum days per month (default: 5 days, configurable via `MAX_LEAVE_DAYS_PER_MONTH`)
+- **Monthly Limit**: Maximum days per month (default: 5 days, configurable per team via Team Settings)
 - **Quota Check**: System validates against both used and pending leaves
 - **No Overlap**: Cannot request overlapping leave dates
 - Pending leaves count toward quota until approved or rejected

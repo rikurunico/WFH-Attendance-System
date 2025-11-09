@@ -6,6 +6,7 @@ use App\Enums\ActivityType;
 use App\Models\Attendance;
 use App\Models\Holiday;
 use App\Models\Leave;
+use App\Models\Team;
 use App\Models\User;
 use App\Repositories\AttendanceRepository;
 use App\Repositories\TaskRepository;
@@ -145,6 +146,8 @@ class AttendanceService
      */
     public function getTodayStatus(User $user): array
     {
+        $user->loadMissing('team');
+
         $today = Carbon::today();
         $activeAttendance = $this->attendanceRepository->findActiveByUser($user);
         $todayAttendances = $this->attendanceRepository->getAllByUserAndDate($user, $today);
@@ -190,13 +193,15 @@ class AttendanceService
             ];
         }
 
+        $requiredWorkHours = $user->team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
+
         return [
             'date' => $today->toDateString(),
             'is_checked_in' => $activeAttendance !== null,
             'current_session' => $currentSession,
             'today_total_hours' => $todayTotalHours,
-            'required_hours' => config('attendance.required_work_hours', 7),
-            'remaining_hours' => max(0, config('attendance.required_work_hours', 7) - $todayTotalHours),
+            'required_hours' => $requiredWorkHours,
+            'remaining_hours' => max(0, $requiredWorkHours - $todayTotalHours),
             'previous_sessions' => $previousSessions,
         ];
     }

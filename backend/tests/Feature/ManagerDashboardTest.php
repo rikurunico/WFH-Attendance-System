@@ -6,6 +6,7 @@ use App\Enums\LeaveStatus;
 use App\Enums\UserRole;
 use App\Models\Attendance;
 use App\Models\Leave;
+use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -184,8 +185,8 @@ class ManagerDashboardTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        // Set required hours to 7 for this test
-        config(['attendance.required_work_hours' => 7]);
+        // Ensure required hours are set for this test
+        $this->team->update(['required_work_hours' => Team::DEFAULT_REQUIRED_WORK_HOURS]);
 
         // Create attendance for employee1
         Attendance::factory()->create([
@@ -409,8 +410,8 @@ class ManagerDashboardTest extends TestCase
     {
         $token = $this->manager->createToken('auth-token')->plainTextToken;
 
-        // Set required hours to 7 for this test
-        config(['attendance.required_work_hours' => 7]);
+        // Ensure required hours are set for this test
+        $this->team->update(['required_work_hours' => Team::DEFAULT_REQUIRED_WORK_HOURS]);
 
         // Create attendance with 8 hours (1 hour overtime)
         Attendance::factory()->create([

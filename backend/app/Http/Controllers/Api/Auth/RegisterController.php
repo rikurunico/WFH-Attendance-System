@@ -27,9 +27,9 @@ class RegisterController extends Controller
             $team = Team::create([
                 'name' => $request->team_name,
                 'description' => $request->team_description,
-                'required_work_hours' => $request->required_work_hours ?? 7.00,
-                'default_leave_quota_days' => $request->default_leave_quota_days ?? 12,
-                'max_leave_days_per_month' => $request->max_leave_days_per_month ?? 5,
+                'required_work_hours' => $request->required_work_hours ?? Team::DEFAULT_REQUIRED_WORK_HOURS,
+                'default_leave_quota_days' => $request->default_leave_quota_days ?? Team::DEFAULT_LEAVE_QUOTA_DAYS,
+                'max_leave_days_per_month' => $request->max_leave_days_per_month ?? Team::DEFAULT_MAX_LEAVE_DAYS_PER_MONTH,
                 'is_active' => true,
             ]);
 
