@@ -123,4 +123,19 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Registration Settings
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options control whether user registration is enabled
+    | or disabled for the application. This is useful for production
+    | environments where you want to control who can create accounts.
+    |
+    */
+
+    'registration' => [
+        'enabled' => env('ENABLE_REGISTRATION', true),
+    ],
+
 ];

@@ -6,11 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { register } from '../../api/auth.api';
 import { Building2, Users, Clock, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export const Register = () => {
   const navigate = useNavigate();
   const { setSession } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,6 +28,18 @@ export const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({});
+
+    // Validation
+    const newErrors = {};
+    if (!captchaToken) {
+      newErrors.captcha = 'Silakan verifikasi bahwa Anda bukan robot';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     if (formData.password !== formData.password_confirmation) {
       toast.error('Password dan konfirmasi password tidak cocok');
@@ -38,7 +53,7 @@ export const Register = () => {
 
     try {
       setLoading(true);
-      const response = await register(formData);
+      const response = await register({ ...formData, captcha_token: captchaToken });
 
       if (response.success) {
         setSession(response.data.user, response.data.token);
@@ -51,6 +66,14 @@ export const Register = () => {
       toast.error(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    // Clear captcha error when user successfully verifies
+    if (token && errors.captcha) {
+      setErrors(prev => ({ ...prev, captcha: undefined }));
     }
   };
 
@@ -191,6 +214,17 @@ export const Register = () => {
                 </div>
               </div>
             </div>
+
+            <div className="flex justify-center pt-6">
+              <ReCAPTCHA
+                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                onChange={handleCaptchaChange}
+              />
+            </div>
+
+            {errors.captcha && (
+              <p className="text-red-500 text-sm mt-2 text-center">{errors.captcha}</p>
+            )}
 
             <div className="flex flex-col space-y-4 pt-6">
               <Button

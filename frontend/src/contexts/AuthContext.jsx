@@ -27,9 +27,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, captchaToken) => {
     try {
-      const response = await loginApi(email, password);
+      const response = await loginApi(email, password, captchaToken);
       
       if (response.success) {
         const { user: userData, token } = response.data;

@@ -225,6 +225,7 @@ class SuperAdminTest extends TestCase
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'admin@example.com',
             'password' => 'password123',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(200);

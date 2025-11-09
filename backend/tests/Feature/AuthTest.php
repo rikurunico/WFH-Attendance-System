@@ -24,6 +24,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(200)
@@ -48,6 +49,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
             'password' => 'wrongpassword',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(401)
@@ -71,6 +73,7 @@ class AuthTest extends TestCase
     {
         $response = $this->postJson('/api/v1/auth/login', [
             'password' => 'password123',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(422)
@@ -81,6 +84,7 @@ class AuthTest extends TestCase
     {
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'test@example.com',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(422)
@@ -92,6 +96,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'invalid-email',
             'password' => 'password123',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(422)
@@ -115,6 +120,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'manager@example.com',
             'password' => 'password123',
+            'captcha_token' => 'test-captcha-token',
         ]);
 
         $response->assertStatus(200)

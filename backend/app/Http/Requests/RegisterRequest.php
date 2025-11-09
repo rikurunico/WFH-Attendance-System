@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\RecaptchaService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -30,7 +31,26 @@ class RegisterRequest extends FormRequest
             'required_work_hours' => 'nullable|numeric|min:1|max:24',
             'default_leave_quota_days' => 'nullable|integer|min:0|max:365',
             'max_leave_days_per_month' => 'nullable|integer|min:0|max:31',
+            'captcha_token' => 'required|string',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $captchaToken = $this->input('captcha_token');
+
+            if ($captchaToken) {
+                $recaptchaService = app(RecaptchaService::class);
+
+                if (!$recaptchaService->verify($captchaToken)) {
+                    $validator->errors()->add('captcha_token', 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.');
+                }
+            }
+        });
     }
 
     /**

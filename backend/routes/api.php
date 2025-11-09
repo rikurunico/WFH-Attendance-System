@@ -31,7 +31,15 @@ use Illuminate\Support\Facades\Route;
 // Authentication routes (no auth required)
 Route::prefix('v1/auth')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
-    Route::post('/register', [RegisterController::class, 'register']);
+    Route::post('/register', [RegisterController::class, 'register'])->middleware('registration.enabled');
+    Route::get('/registration-status', function () {
+        return response()->json([
+            'enabled' => config('app.registration.enabled', true),
+            'message' => config('app.registration.enabled', true)
+                ? 'Registration is enabled'
+                : 'Registration is disabled'
+        ]);
+    });
 });
 
 // Protected routes

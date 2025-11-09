@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/common/PrivateRoute';
+import { ProtectedRegisterRoute } from './components/common/ProtectedRegisterRoute';
 import { useAuth } from './hooks/useAuth';
 
 // Auth Pages
@@ -87,7 +88,14 @@ function App() {
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route
+            path="/register"
+            element={
+              <ProtectedRegisterRoute>
+                <Register />
+              </ProtectedRegisterRoute>
+            }
+          />
 
           {/* Employee Routes */}
           <Route

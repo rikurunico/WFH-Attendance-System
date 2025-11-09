@@ -2,17 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useRegistrationStatus } from '../../hooks/useRegistrationStatus';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { LogIn } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export const Login = () => {
   usePageTitle('Masuk');
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const { isEnabled: isRegistrationEnabled, loading: registrationLoading } = useRegistrationStatus();
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -35,6 +39,7 @@ export const Login = () => {
     const newErrors = {};
     if (!email) newErrors.email = 'Email wajib diisi';
     if (!password) newErrors.password = 'Kata sandi wajib diisi';
+    if (!captchaToken) newErrors.captcha = 'Silakan verifikasi bahwa Anda bukan robot';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -43,7 +48,8 @@ export const Login = () => {
     }
 
     try {
-      const result = await login(email, password);
+      console.log('Attempting login with:', { email, hasCaptchaToken: !!captchaToken });
+      const result = await login(email, password, captchaToken);
       
       if (result.success) {
         // Get intended destination from location state, or use default based on role
@@ -65,6 +71,15 @@ export const Login = () => {
       console.error('Login error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCaptchaChange = (token) => {
+    console.log('reCAPTCHA token received:', token ? `${token.substring(0, 20)}...` : 'null');
+    setCaptchaToken(token);
+    // Clear captcha error when user successfully verifies
+    if (token && errors.captcha) {
+      setErrors(prev => ({ ...prev, captcha: undefined }));
     }
   };
 
@@ -105,6 +120,17 @@ export const Login = () => {
               required
             />
 
+            <div className="flex justify-center mb-4">
+              <ReCAPTCHA
+                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                onChange={handleCaptchaChange}
+              />
+            </div>
+
+            {errors.captcha && (
+              <p className="text-red-500 text-sm mt-1 mb-4 text-center">{errors.captcha}</p>
+            )}
+
             <Button
               type="submit"
               disabled={loading}
@@ -113,12 +139,20 @@ export const Login = () => {
               {loading ? 'Masuk...' : 'Masuk'}
             </Button>
 
-            <p className="text-center text-sm text-gray-600 mt-4">
-              Belum punya akun?{' '}
-              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-                Daftar sebagai Manager
-              </Link>
-            </p>
+            {!registrationLoading && isRegistrationEnabled && (
+              <p className="text-center text-sm text-gray-600 mt-4">
+                Belum punya akun?{' '}
+                <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+                  Daftar sebagai Manager
+                </Link>
+              </p>
+            )}
+
+            {!registrationLoading && !isRegistrationEnabled && (
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Pendaftaran akun baru sedang dinonaktifkan
+              </p>
+            )}
           </form>
         </div>
       </div>

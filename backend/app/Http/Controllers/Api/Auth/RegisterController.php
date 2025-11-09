@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,17 @@ class RegisterController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
+        // Double check registration is enabled
+        if (!Config::get('app.registration.enabled', true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration is currently disabled',
+                'errors' => [
+                    'registration' => ['Pendaftaran akun baru sedang dinonaktifkan']
+                ]
+            ], 403);
+        }
+
         try {
             DB::beginTransaction();
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Repositories\UserRepository;
 use App\Services\ActivityLogService;
+use App\Services\RecaptchaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,8 @@ class LoginController extends Controller
 {
     public function __construct(
         private UserRepository $userRepository,
-        private ActivityLogService $activityLogService
+        private ActivityLogService $activityLogService,
+        private RecaptchaService $recaptchaService
     ) {}
 
     public function login(Request $request): JsonResponse
@@ -25,6 +27,7 @@ class LoginController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
             'password' => 'required|min:8',
+            'captcha_token' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -32,6 +35,16 @@ class LoginController extends Controller
                 'success' => false,
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Verify reCAPTCHA
+        $captchaToken = $request->input('captcha_token');
+        if (!$this->recaptchaService->verify($captchaToken)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'reCAPTCHA verification failed',
+                'errors' => ['captcha_token' => ['Verifikasi reCAPTCHA gagal. Silakan coba lagi.']],
             ], 422);
         }
 
