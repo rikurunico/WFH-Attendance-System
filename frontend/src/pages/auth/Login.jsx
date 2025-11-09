@@ -96,6 +96,12 @@ export const Login = () => {
               WFH
             </h1>
             <p className="text-gray-600">Masuk ke akun Anda</p>
+            <Link
+              to="/"
+              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mt-2 transition-colors"
+            >
+              ← Kembali ke Beranda
+            </Link>
           </div>
 
           {/* Form */}

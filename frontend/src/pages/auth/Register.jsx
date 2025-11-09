@@ -87,9 +87,15 @@ export const Register = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Daftar Tim Baru
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-2">
             Buat tim Anda dan mulai mengelola kehadiran karyawan
           </p>
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            ← Kembali ke Beranda
+          </Link>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">

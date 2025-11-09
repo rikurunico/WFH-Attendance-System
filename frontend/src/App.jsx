@@ -5,6 +5,9 @@ import { PrivateRoute } from './components/common/PrivateRoute';
 import { ProtectedRegisterRoute } from './components/common/ProtectedRegisterRoute';
 import { useAuth } from './hooks/useAuth';
 
+// Pages
+import { LandingPage } from './pages/LandingPage';
+
 // Auth Pages
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -38,7 +41,7 @@ const RootRedirect = () => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <LandingPage />;
   }
 
   // Redirect based on role

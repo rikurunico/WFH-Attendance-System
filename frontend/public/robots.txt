@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://wfh.web.id/sitemap.xml
+
+# Block common non-content paths
+Disallow: /api/
+
+# Allow specific important directories
+Allow: /images/
+Allow: /css/
+Allow: /js/
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1
+
+# Host
+Host: https://wfh.web.id
