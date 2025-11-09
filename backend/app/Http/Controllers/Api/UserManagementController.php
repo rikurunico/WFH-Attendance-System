@@ -53,13 +53,30 @@ class UserManagementController extends Controller
     {
         try {
             $data = $request->validated();
-            $data['team_id'] = auth()->user()->team_id;
-            
+            $currentUser = auth()->user();
+
+            // Super admin must specify team_id in request, others use their own team
+            if ($currentUser->isSuperAdmin()) {
+                if (!isset($data['team_id'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Team ID is required for super admin',
+                    ], 422);
+                }
+            } else {
+                $data['team_id'] = $currentUser->team_id;
+            }
+
             // If leave_quota_days is not set, use team's default
             if (!isset($data['leave_quota_days'])) {
-                $data['leave_quota_days'] = auth()->user()->team->default_leave_quota_days;
+                $team = \App\Models\Team::find($data['team_id']);
+                if ($team) {
+                    $data['leave_quota_days'] = $team->default_leave_quota_days;
+                } else {
+                    $data['leave_quota_days'] = 12; // Default fallback
+                }
             }
-            
+
             $user = $this->userRepository->create($data);
 
             return response()->json([
@@ -89,8 +106,10 @@ class UserManagementController extends Controller
                 ], 404);
             }
 
-            // Ensure user belongs to the same team
-            if ($user->team_id !== auth()->user()->team_id) {
+            $currentUser = auth()->user();
+
+            // Ensure user belongs to the same team (super admin can update any user)
+            if (!$currentUser->isSuperAdmin() && $user->team_id !== $currentUser->team_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to update this user',
@@ -126,8 +145,10 @@ class UserManagementController extends Controller
                 ], 404);
             }
 
-            // Ensure user belongs to the same team
-            if ($user->team_id !== auth()->user()->team_id) {
+            $currentUser = auth()->user();
+
+            // Ensure user belongs to the same team (super admin can delete any user)
+            if (!$currentUser->isSuperAdmin() && $user->team_id !== $currentUser->team_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to delete this user',

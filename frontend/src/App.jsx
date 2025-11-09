@@ -25,6 +25,10 @@ import { LeaveApproval } from './pages/manager/LeaveApproval';
 import { ActivityLogs } from './pages/manager/ActivityLogs';
 import { TeamSettings } from './pages/manager/TeamSettings';
 
+// Super Admin Pages
+import { TeamManagement } from './pages/super-admin/TeamManagement';
+import { SuperAdminUserManagement } from './pages/super-admin/UserManagement';
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
 
@@ -34,6 +38,11 @@ const RootRedirect = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect based on role
+  if (user.role === 'super_admin') {
+    return <Navigate to="/super-admin/teams" replace />;
   }
 
   if (user.role === 'manager') {
@@ -184,6 +193,24 @@ function App() {
             element={
               <PrivateRoute requiredRole="manager">
                 <TeamSettings />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Super Admin Routes */}
+          <Route
+            path="/super-admin/teams"
+            element={
+              <PrivateRoute>
+                <TeamManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/super-admin/users"
+            element={
+              <PrivateRoute>
+                <SuperAdminUserManagement />
               </PrivateRoute>
             }
           />

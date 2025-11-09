@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 
 export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
-  const { isEmployee, isManager } = useAuth();
+  const { isEmployee, isManager, isSuperAdmin } = useAuth();
 
   const employeeLinks = [
     { to: '/employee/dashboard', icon: Home, label: 'Dashboard' },
@@ -34,10 +34,15 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
     { to: '/manager/leaves', icon: ClipboardList, label: 'Persetujuan Cuti' },
     { to: '/manager/holidays', icon: Calendar, label: 'Hari Libur' },
     { to: '/manager/activity-logs', icon: Activity, label: 'Log Aktivitas' },
-    { to: '/manager/team-settings', icon: Building2, label: 'Pengaturan Tim' },
   ];
 
-  const links = isManager ? managerLinks : employeeLinks;
+  const superAdminLinks = [
+    { to: '/super-admin/teams', icon: Building2, label: 'Manajemen Tim' },
+    { to: '/super-admin/users', icon: Users, label: 'Manajemen Pengguna' },
+  ];
+
+  // Super admin gets super admin links, manager gets manager links with team settings, employee gets employee links
+  const links = isSuperAdmin ? superAdminLinks : (isManager ? [...managerLinks, { to: '/manager/team-settings', icon: Building2, label: 'Pengaturan Tim' }] : employeeLinks);
 
   return (
     <>

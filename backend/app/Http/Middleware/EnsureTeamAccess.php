@@ -27,6 +27,12 @@ class EnsureTeamAccess
             ], 401);
         }
 
+        // Super admin can bypass team checks
+        if ($user->isSuperAdmin()) {
+            $request->merge(['current_team_id' => null]);
+            return $next($request);
+        }
+
         // Check if user has a team
         if (!$user->team_id) {
             return response()->json([

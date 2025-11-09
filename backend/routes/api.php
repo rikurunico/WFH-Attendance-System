@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\ManagerTaskController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TeamSettingsController;
 use App\Http\Controllers\Api\UserManagementController;
+use App\Http\Controllers\Api\TeamManagementController;
+use App\Http\Controllers\Api\ImpersonateController;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureTeamAccess;
 use Illuminate\Support\Facades\Route;
@@ -121,5 +123,23 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'log.user.activity', EnsureTeam
         // Activity Logs
         Route::get('/manager/activity-logs', [ActivityLogController::class, 'index']);
     });
+
+    // Super Admin Routes (Only accessible by super admin)
+    Route::middleware('super.admin')->prefix('super-admin')->group(function () {
+        // Team Management
+        Route::prefix('teams')->group(function () {
+            Route::get('/', [TeamManagementController::class, 'index']);
+            Route::post('/', [TeamManagementController::class, 'store']);
+            Route::get('/{id}', [TeamManagementController::class, 'show']);
+            Route::put('/{id}', [TeamManagementController::class, 'update']);
+            Route::delete('/{id}', [TeamManagementController::class, 'destroy']);
+        });
+
+        // Impersonation - start impersonate (requires super admin)
+        Route::post('/impersonate/{userId}', [ImpersonateController::class, 'impersonate']);
+    });
+
+    // Stop impersonate - accessible by impersonated user (not super admin)
+    Route::post('/super-admin/stop-impersonate', [ImpersonateController::class, 'stopImpersonate']);
 });
 

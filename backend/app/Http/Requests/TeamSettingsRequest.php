@@ -11,8 +11,8 @@ class TeamSettingsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Only managers can update team settings
-        return auth()->check() && auth()->user()->isManager();
+        // Only managers and super admin can update team settings
+        return auth()->check() && (auth()->user()->isManager() || auth()->user()->isSuperAdmin());
     }
 
     /**

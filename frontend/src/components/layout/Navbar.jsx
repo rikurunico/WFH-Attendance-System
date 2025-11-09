@@ -1,14 +1,44 @@
-import { LogOut, User, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, User, Menu, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { stopImpersonate } from '../../api/team.api';
+import toast from 'react-hot-toast';
 
 export const Navbar = ({ onMenuClick, onSidebarToggle, sidebarCollapsed = false }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, setSession } = useAuth();
   const navigate = useNavigate();
+
+  const isImpersonating = sessionStorage.getItem('is_impersonating') === 'true';
+  const originalUserId = sessionStorage.getItem('original_user_id');
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleStopImpersonate = async () => {
+    try {
+      const response = await stopImpersonate(parseInt(originalUserId));
+
+      if (response.success) {
+        const { user: superAdmin, token } = response.data;
+
+        // Clear impersonation session
+        sessionStorage.removeItem('original_user_id');
+        sessionStorage.removeItem('is_impersonating');
+
+        // Update auth context with super admin
+        setSession(superAdmin, token);
+
+        toast.success('Stopped impersonating');
+
+        // Redirect to super admin dashboard
+        window.location.href = '/super-admin/teams';
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to stop impersonation';
+      toast.error(message);
+    }
   };
 
   return (
@@ -40,20 +70,55 @@ export const Navbar = ({ onMenuClick, onSidebarToggle, sidebarCollapsed = false 
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Impersonation Indicator */}
+            {isImpersonating && (
+              <div className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-lg">
+                <UserX size={14} className="text-yellow-700 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline text-xs font-medium text-yellow-700">
+                  Impersonating
+                </span>
+              </div>
+            )}
+
+            {/* User Info - Hidden on small screens */}
+            <div className="hidden md:flex items-center space-x-2">
               <User size={20} className="text-gray-600" />
               <div className="text-sm">
                 <p className="font-medium text-gray-900">{user?.name}</p>
-                <p className="text-gray-500 capitalize">{user?.role}</p>
+                <p className="text-gray-500 capitalize">
+                  {user?.role === 'super_admin' ? 'Super Admin' : user?.role}
+                </p>
               </div>
             </div>
+
+            {/* User Icon Only - Visible on small screens */}
+            <div className="md:hidden flex items-center">
+              <div className="p-2 bg-gray-100 rounded-full">
+                <User size={18} className="text-gray-600" />
+              </div>
+            </div>
+
+            {/* Stop Impersonate Button */}
+            {isImpersonating && (
+              <button
+                onClick={handleStopImpersonate}
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                title="Stop Impersonate"
+              >
+                <UserX size={18} />
+                <span className="hidden sm:inline">Stop</span>
+              </button>
+            )}
+
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Logout"
             >
               <LogOut size={18} />
-              <span>Keluar</span>
+              <span className="hidden sm:inline">Keluar</span>
             </button>
           </div>
         </div>

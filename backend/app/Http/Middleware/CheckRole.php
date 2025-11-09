@@ -22,6 +22,11 @@ class CheckRole
 
         $user = auth()->user();
 
+        // Super admin can access all routes
+        if ($user->isSuperAdmin()) {
+            return $next($request);
+        }
+
         if ($role === 'manager' && !$user->isManager()) {
             abort(403, 'Unauthorized. Manager role required.');
         }

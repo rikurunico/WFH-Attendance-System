@@ -19,6 +19,14 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role->value,
+            'team_id' => $this->team_id,
+            'team' => $this->when($this->team, function () {
+                return [
+                    'id' => $this->team->id,
+                    'name' => $this->team->name,
+                    'slug' => $this->team->slug,
+                ];
+            }),
             'leave_quota_days' => $this->leave_quota_days,
             'approved_leaves_count' => $this->approved_leaves_count ?? 0,
             'remaining_leave_days' => $this->leave_quota_days - ($this->approved_leaves_count ?? 0),

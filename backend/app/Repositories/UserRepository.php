@@ -28,16 +28,17 @@ class UserRepository
      */
     public function getPaginated(int $perPage = 10, ?int $teamId = null)
     {
-        $query = User::withCount([
-            'leaves as approved_leaves_count' => function ($query) {
-                $query->where('status', 'approved');
-            }
-        ]);
-        
+        $query = User::with('team')
+            ->withCount([
+                'leaves as approved_leaves_count' => function ($query) {
+                    $query->where('status', 'approved');
+                }
+            ]);
+
         if ($teamId) {
             $query->where('team_id', $teamId);
         }
-        
+
         return $query->orderBy('name')->paginate($perPage);
     }
 
