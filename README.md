@@ -106,8 +106,6 @@ npm run dev
 
 **4. Login Credentials:**
 - Super Admin: `admin@example.com` / `password123`
-- Manager: `manager@example.com` / `password123`
-- Employee: `employee@example.com` / `password123`
 
 **5. Configuration (Optional):**
 ```bash
@@ -119,8 +117,6 @@ ENABLE_REGISTRATION=true
 VITE_RECAPTCHA_SITE_KEY=your_google_recaptcha_site_key
 VITE_ENABLE_REGISTRATION=true
 ```
-
-📖 **Detailed Guide**: See [QUICK_START.md](QUICK_START.md)
 
 ---
 
@@ -251,26 +247,9 @@ VITE_ENABLE_REGISTRATION=true
 ### Main Documentation
 | Document | Description |
 |----------|-------------|
-| [QUICK_START.md](QUICK_START.md) | Get started in 5 minutes |
 | [FEATURES.md](FEATURES.md) | Complete feature specifications |
-| [API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md) | API reference with examples |
-| [UI_TESTING_GUIDE.md](UI_TESTING_GUIDE.md) | Comprehensive UI testing (100+ test cases) |
-| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Production deployment instructions |
-| [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) | Implementation details & status |
-
-### New Security & Setup Guides
-| Document | Description |
-|----------|-------------|
-| **[RECAPTCHA_SETUP.md](RECAPTCHA_SETUP.md)** | Google reCAPTCHA configuration guide |
-| **[RECAPTCHA_TROUBLESHOOTING.md](RECAPTCHA_TROUBLESHOOTING.md)** | reCAPTCHA troubleshooting guide |
-| **[REGISTRATION_SETTINGS.md](REGISTRATION_SETTINGS.md)** | Registration control settings |
-
-### Technical Documentation
-| Document | Description |
-|----------|-------------|
-| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Architecture & structure |
+| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Architecture & structure details |
 | [CODING_STANDARDS.md](CODING_STANDARDS.md) | Code standards & best practices |
-| [frontend/README.md](frontend/README.md) | Frontend documentation |
 
 ---
 
@@ -304,7 +283,7 @@ php artisan test
 ### Frontend Testing
 
 **Manual Testing:**
-Complete testing guide with 100+ test cases available in [UI_TESTING_GUIDE.md](UI_TESTING_GUIDE.md)
+Comprehensive testing covers authentication, employee features, manager features, UI/UX, integration testing, edge cases, browser compatibility, and security testing.
 
 **Test Categories:**
 1. Authentication Testing (7 test cases)
@@ -390,21 +369,15 @@ cd frontend && npm run dev
 ### Production
 
 **Option 1: VPS (Recommended)**
-- See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed instructions
 - Includes Nginx, SSL, PostgreSQL setup
 - Cron job configuration for auto-checkout
 
-**Option 2: Docker**
-- Docker Compose configuration included
-- One-command deployment
-- Containerized services
-
-**Option 3: Cloud**
+**Option 2: Cloud**
 - Frontend: Vercel/Netlify
 - Backend: Railway/Heroku
 - Database: Managed PostgreSQL
 
-📖 **Full Guide**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+📖 **Deployment**: Backend requires VPS with PHP 8.2+, PostgreSQL 15+, Nginx/Apache, SSL certificate
 
 ---
 
@@ -412,46 +385,53 @@ cd frontend && npm run dev
 
 ```
 WFH-Attendance-System/
-├── backend/                    # Laravel API
+├── README.md                  # Main Project Documentation
+├── FEATURES.md                # Complete Feature Specifications
+├── PROJECT_STRUCTURE.md       # Architecture & Structure Details
+├── CODING_STANDARDS.md        # Code Standards & Best Practices
+│
+├── backend/                   # Laravel 12 API
 │   ├── app/
 │   │   ├── Http/Controllers/  # API Controllers
 │   │   ├── Models/            # Eloquent Models
 │   │   ├── Services/          # Business Logic
-│   │   └── Repositories/      # Data Access
+│   │   └── Repositories/      # Data Access Layer
 │   ├── database/
 │   │   ├── migrations/        # Database Migrations
 │   │   └── seeders/           # Data Seeders
 │   ├── routes/
-│   │   └── api.php           # API Routes
-│   ├── tests/                # PHPUnit Tests
-│   └── API_DOCUMENTATION.md  # API Docs
+│   │   ├── api.php           # API Routes
+│   │   └── web.php           # Web Routes
+│   ├── tests/                # PHPUnit Tests (171 tests)
+│   ├── config/               # Configuration Files
+│   ├── public/               # Public Assets
+│   └── resources/            # Views & Resources
 │
-├── frontend/                  # React App
+├── frontend/                  # React 19+ Application
 │   ├── src/
-│   │   ├── api/              # API Services
+│   │   ├── api/              # API Service Functions
 │   │   ├── components/       # React Components
-│   │   │   ├── common/       # Reusable Components
-│   │   │   ├── layout/       # Layout Components
-│   │   │   └── attendance/   # Feature Components
-│   │   ├── contexts/         # React Contexts
-│   │   ├── hooks/            # Custom Hooks
+│   │   │   ├── common/       # Reusable UI Components
+│   │   │   ├── layout/       # Layout Components (Navbar, Sidebar)
+│   │   │   └── attendance/   # Attendance Feature Components
+│   │   ├── contexts/         # React Contexts (Auth, etc.)
+│   │   ├── hooks/            # Custom React Hooks
 │   │   ├── pages/            # Page Components
-│   │   │   ├── auth/         # Auth Pages
-│   │   │   ├── employee/     # Employee Pages
-│   │   │   └── manager/      # Manager Pages
-│   │   ├── utils/            # Utilities
-│   │   ├── App.jsx           # Main App
-│   │   └── main.jsx          # Entry Point
-│   └── README.md             # Frontend Docs
+│   │   │   ├── auth/         # Authentication Pages
+│   │   │   ├── employee/     # Employee Dashboard & Pages
+│   │   │   ├── manager/      # Manager Dashboard & Pages
+│   │   │   └── LandingPage.jsx # Landing Page
+│   │   ├── utils/            # Utility Functions
+│   │   ├── App.jsx           # Main Application Component
+│   │   └── main.jsx          # Application Entry Point
+│   ├── public/               # Static Assets (PWA files, robots.txt)
+│   ├── dist/                 # Production Build Output
+│   ├── index.html            # HTML Template with SEO optimization
+│   ├── package.json          # Dependencies & Scripts
+│   ├── vite.config.js        # Vite Configuration
+│   └── tailwind.config.js    # TailwindCSS Configuration
 │
-└── docs/                      # Documentation
-    ├── QUICK_START.md
-    ├── FEATURES.md
-    ├── UI_TESTING_GUIDE.md
-    ├── DEPLOYMENT_GUIDE.md
-    ├── IMPLEMENTATION_SUMMARY.md
-    ├── PROJECT_STRUCTURE.md
-    └── CODING_STANDARDS.md
+└── .git/                     # Git Repository
 ```
 
 ---
@@ -531,9 +511,9 @@ WFH-Attendance-System/
 ## 📞 Support
 
 ### Documentation
-- Check documentation files first
-- Review [UI_TESTING_GUIDE.md](UI_TESTING_GUIDE.md) for testing
-- See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deployment
+- Check main [README.md](README.md) for overview
+- Review [FEATURES.md](FEATURES.md) for complete feature specifications
+- See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for architecture details
 
 ### Troubleshooting
 1. Check console for errors (F12)
@@ -587,9 +567,9 @@ This project is proprietary software. All rights reserved.
 
 Ready to start? Follow these steps:
 
-1. 📖 Read [QUICK_START.md](QUICK_START.md) - Get running in 5 minutes
-2. 🧪 Follow [UI_TESTING_GUIDE.md](UI_TESTING_GUIDE.md) - Test all features
-3. 🚀 Deploy using [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Go to production
+1. 📖 Read installation instructions above - Get running in 5 minutes
+2. 🧪 Test all features using the provided test credentials
+3. 🚀 Deploy to your preferred hosting platform
 
 ---
 
