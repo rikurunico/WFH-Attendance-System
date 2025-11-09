@@ -9,8 +9,9 @@ This document describes all features, user stories, business logic, API endpoint
 1. [Authentication & Authorization](#1-authentication--authorization)
 2. [Employee Features](#2-employee-features)
 3. [Manager Features](#3-manager-features)
-4. [System Features](#4-system-features)
-5. [API Endpoints Reference](#5-api-endpoints-reference)
+4. [Super Admin Features](#4-super-admin-features)
+5. [System Features](#5-system-features)
+6. [API Endpoints Reference](#6-api-endpoints-reference)
 
 ---
 
@@ -32,6 +33,7 @@ This document describes all features, user stories, business logic, API endpoint
 **Validation Rules:**
 - Email: required, valid email format, exists in database
 - Password: required, minimum 8 characters
+- reCAPTCHA: required (Google reCAPTCHA v2 checkbox)
 
 **API Endpoint:**
 ```
@@ -42,7 +44,8 @@ POST /api/v1/auth/login
 ```json
 {
     "email": "employee@example.com",
-    "password": "password123"
+    "password": "password123",
+    "captcha_token": "03AOLTBLR..."
 }
 ```
 
@@ -73,7 +76,109 @@ POST /api/v1/auth/login
 
 ---
 
-### Feature 1.2: User Logout
+### Feature 1.2: User Registration (Manager)
+
+**User Story:**
+> As a new manager, I want to register my account and create my team so that I can start managing employee attendance.
+
+**Business Logic:**
+- Registration can be enabled/disabled via environment variable
+- Manager creates personal account and team simultaneously
+- System generates team with default settings
+- Manager assigned as team owner
+- Auto-login after successful registration
+
+**Validation Rules:**
+- Name: required, string, maximum 255 characters
+- Email: required, valid email, unique in database
+- Password: required, minimum 8 characters, confirmed
+- Team name: required, string, maximum 255 characters
+- Team description: optional, string, maximum 1000 characters
+- Required work hours: optional, numeric, 1-24 (default: 7)
+- Default leave quota: optional, integer, 0-365 (default: 12)
+- Max leave per month: optional, integer, 0-31 (default: 5)
+- reCAPTCHA: required (Google reCAPTCHA v2 checkbox)
+
+**API Endpoint:**
+```
+POST /api/v1/auth/register
+```
+
+**Request Body:**
+```json
+{
+    "name": "John Manager",
+    "email": "manager@company.com",
+    "password": "SecurePass123",
+    "password_confirmation": "SecurePass123",
+    "team_name": "Tech Team",
+    "team_description": "Development team for project X",
+    "required_work_hours": "8",
+    "default_leave_quota_days": "15",
+    "max_leave_days_per_month": "6",
+    "captcha_token": "03AOLTBLR..."
+}
+```
+
+**Response (Success - 201):**
+```json
+{
+    "success": true,
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Manager",
+            "email": "manager@company.com",
+            "role": "manager"
+        },
+        "token": "1|xyz123abc456...",
+        "team": {
+            "id": 1,
+            "name": "Tech Team",
+            "slug": "tech-team",
+            "required_work_hours": 8,
+            "default_leave_quota_days": 15,
+            "max_leave_days_per_month": 6
+        }
+    },
+    "message": "Registration successful! Team created."
+}
+```
+
+**Response (Error - 403):**
+```json
+{
+    "success": false,
+    "message": "Registration is currently disabled",
+    "errors": {
+        "registration": ["Pendaftaran akun baru sedang dinonaktifkan"]
+    }
+}
+```
+
+---
+
+### Feature 1.3: Registration Status Check
+
+**User Story:**
+> As a frontend application, I want to check if registration is enabled so I can show/hide registration options.
+
+**API Endpoint:**
+```
+GET /api/v1/auth/registration-status
+```
+
+**Response (Success - 200):**
+```json
+{
+    "enabled": true,
+    "message": "Registration is enabled"
+}
+```
+
+---
+
+### Feature 1.4: User Logout
 
 **User Story:**
 > As a logged-in user, I want to log out so that my session ends securely.
@@ -969,9 +1074,162 @@ GET /api/v1/manager/activity-logs?user_id=1&action=check_in&start_date=2024-01-0
 
 ---
 
-## 4. System Features
+## 4. Super Admin Features
 
-### Feature 4.1: Auto Checkout at 23:59
+### Feature 4.1: Team Management
+
+**User Story:**
+> As a super admin, I want to manage all teams in the system so I can oversee multiple organizations.
+
+#### 4.1.1: List All Teams
+**API Endpoint:**
+```
+GET /api/v1/super-admin/teams
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "name": "Tech Team",
+            "slug": "tech-team",
+            "description": "Development team",
+            "required_work_hours": 7,
+            "default_leave_quota_days": 12,
+            "max_leave_days_per_month": 5,
+            "is_active": true,
+            "users_count": 15,
+            "created_at": "2024-01-01T00:00:00.000000Z"
+        }
+    ]
+}
+```
+
+#### 4.1.2: Create Team
+**API Endpoint:**
+```
+POST /api/v1/super-admin/teams
+```
+
+#### 4.1.3: Update Team
+**API Endpoint:**
+```
+PUT /api/v1/super-admin/teams/{id}
+```
+
+#### 4.1.4: Delete Team
+**Business Logic:**
+- Cannot delete teams with users
+- Soft delete for audit trail
+
+**API Endpoint:**
+```
+DELETE /api/v1/super-admin/teams/{id}
+```
+
+---
+
+### Feature 4.2: Cross-Team User Management
+
+**User Story:**
+> As a super admin, I want to view and update users from any team so I can manage the entire system.
+
+**API Endpoint:**
+```
+GET /api/v1/super-admin/users
+```
+
+**API Endpoint:**
+```
+PUT /api/v1/super-admin/users/{id}
+```
+
+---
+
+### Feature 4.3: User Impersonation
+
+**User Story:**
+> As a super admin, I want to impersonate other users so I can troubleshoot issues and provide support.
+
+**Business Logic:**
+- Super admin can impersonate any user except other super admins
+- Original super admin session preserved
+- Can stop impersonation at any time
+- All actions logged as impersonated
+
+**API Endpoint:**
+```
+POST /api/v1/super-admin/impersonate/{userId}
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "data": {
+        "impersonated_user": {
+            "id": 5,
+            "name": "John Employee",
+            "email": "john@example.com",
+            "role": "employee",
+            "team_id": 1
+        },
+        "impersonator_token": "2|impersonate_token_xyz...",
+        "original_user": {
+            "id": 1,
+            "name": "Super Admin",
+            "role": "super_admin"
+        }
+    },
+    "message": "Impersonation started"
+}
+```
+
+**API Endpoint:**
+```
+POST /api/v1/super-admin/stop-impersonate
+```
+
+**Response (Success - 200):**
+```json
+{
+    "success": true,
+    "message": "Impersonation stopped",
+    "data": {
+        "original_user": {
+            "id": 1,
+            "name": "Super Admin",
+            "role": "super_admin"
+        }
+    }
+}
+```
+
+---
+
+### Feature 4.4: Super Admin Access
+
+**Business Logic:**
+- Super admin can bypass team access restrictions
+- Can access any team's data
+- Can perform manager operations on any team
+- Cannot perform regular employee operations (check-in/out)
+
+**Permissions:**
+- View all teams and users
+- Manage team settings
+- Create/delete teams (when empty)
+- Impersonate any user (except super admin)
+- Access all managerial endpoints across teams
+
+---
+
+## 5. System Features
+
+### Feature 5.1: Auto Checkout at 23:59
 
 **Business Logic:**
 - Laravel Scheduler runs daily at 23:59
@@ -1002,7 +1260,7 @@ $schedule->command('attendance:auto-checkout')->dailyAt('23:59');
 
 ---
 
-### Feature 4.2: Work Hours Calculation
+### Feature 5.2: Work Hours Calculation
 
 **Business Logic:**
 - Required hours per day: **7 hours**
@@ -1028,7 +1286,7 @@ $schedule->command('attendance:auto-checkout')->dailyAt('23:59');
 
 ---
 
-### Feature 4.3: Dashboard Statistics
+### Feature 5.3: Dashboard Statistics
 
 **Business Logic:**
 Calculate and display various statistics for both employees and managers.
@@ -1050,13 +1308,54 @@ Calculate and display various statistics for both employees and managers.
 
 ---
 
-## 5. API Endpoints Reference
+### Feature 5.4: Google reCAPTCHA Integration
+
+**Business Logic:**
+- All authentication forms protected by Google reCAPTCHA v2
+- Prevents automated bots and spam registrations
+- Configurable via environment variables
+- Bypassed in testing environment
+
+**Configuration:**
+- Frontend: `VITE_RECAPTCHA_SITE_KEY`
+- Backend: `RECAPTCHA_SECRET_KEY`
+- reCAPTCHA type: v2 "I'm not a robot" checkbox
+
+**Validation:**
+- reCAPTCHA token required for login and register
+- Token verified against Google API
+- Failed verification blocks form submission
+
+---
+
+### Feature 5.5: Registration Control
+
+**Business Logic:**
+- System administrators can enable/disable public registration
+- Multi-layer protection: frontend + backend
+- Configurable via environment variables
+- Graceful UI feedback when disabled
+
+**Environment Variables:**
+- Backend: `ENABLE_REGISTRATION` (true/false)
+- Frontend: `VITE_ENABLE_REGISTRATION` (true/false)
+
+**Use Cases:**
+- Production: Disable public registration
+- Development: Enable for testing
+- Private beta: API enabled, frontend disabled
+
+---
+
+## 6. API Endpoints Reference
 
 ### Authentication Endpoints
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/v1/auth/login` | User login | No |
+| POST | `/api/v1/auth/register` | User registration (manager) | No |
 | POST | `/api/v1/auth/logout` | User logout | Yes |
+| GET | `/api/v1/auth/registration-status` | Check registration status | No |
 
 ### Attendance Endpoints (Employee)
 | Method | Endpoint | Description | Auth Required | Role |
@@ -1120,9 +1419,22 @@ Calculate and display various statistics for both employees and managers.
 |--------|----------|-------------|---------------|------|
 | GET | `/api/v1/manager/activity-logs` | View activity logs | Yes | Manager |
 
+### Super Admin Endpoints
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|---------------|------|
+| GET | `/api/v1/super-admin/teams` | List all teams | Yes | Super Admin |
+| POST | `/api/v1/super-admin/teams` | Create team | Yes | Super Admin |
+| GET | `/api/v1/super-admin/teams/{id}` | Get team details | Yes | Super Admin |
+| PUT | `/api/v1/super-admin/teams/{id}` | Update team | Yes | Super Admin |
+| DELETE | `/api/v1/super-admin/teams/{id}` | Delete team | Yes | Super Admin |
+| GET | `/api/v1/super-admin/users` | List users across teams | Yes | Super Admin |
+| PUT | `/api/v1/super-admin/users/{id}` | Update user across teams | Yes | Super Admin |
+| POST | `/api/v1/super-admin/impersonate/{userId}` | Start impersonation | Yes | Super Admin |
+| POST | `/api/v1/super-admin/stop-impersonate` | Stop impersonation | Yes | Impersonated User |
+
 ---
 
-## 6. Business Rules Summary
+## 7. Business Rules Summary
 
 ### Work Hours Rules
 1. **Required daily hours**: 7 hours
@@ -1167,7 +1479,7 @@ Calculate and display various statistics for both employees and managers.
 
 ---
 
-## 7. Edge Cases & Special Scenarios
+## 8. Edge Cases & Special Scenarios
 
 ### Scenario 1: Employee forgets to check out
 - **Solution**: Auto-checkout at 23:59
