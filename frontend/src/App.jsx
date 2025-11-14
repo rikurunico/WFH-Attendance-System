@@ -1,37 +1,40 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/common/PrivateRoute';
 import { ProtectedRegisterRoute } from './components/common/ProtectedRegisterRoute';
+import { Loading } from './components/common/Loading';
 import { useAuth } from './hooks/useAuth';
 
-// Pages
+// Landing page loaded immediately (not lazy) for SEO
 import { LandingPage } from './pages/LandingPage';
 
+// Lazy load all other pages for better performance
 // Auth Pages
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
+const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/auth/Register').then(m => ({ default: m.Register })));
 
 // Employee Pages
-import { EmployeeDashboard } from './pages/employee/Dashboard';
-import { MyReport } from './pages/employee/MyReport';
-import { MyLeave } from './pages/employee/MyLeave';
-import { ChangePassword } from './pages/employee/ChangePassword';
+const EmployeeDashboard = lazy(() => import('./pages/employee/Dashboard').then(m => ({ default: m.EmployeeDashboard })));
+const MyReport = lazy(() => import('./pages/employee/MyReport').then(m => ({ default: m.MyReport })));
+const MyLeave = lazy(() => import('./pages/employee/MyLeave').then(m => ({ default: m.MyLeave })));
+const ChangePassword = lazy(() => import('./pages/employee/ChangePassword').then(m => ({ default: m.ChangePassword })));
 
 // Manager Pages
-import { ManagerDashboard } from './pages/manager/Dashboard';
-import { UserManagement } from './pages/manager/UserManagement';
-import { AttendanceManagement } from './pages/manager/AttendanceManagement';
-import { DailyAttendanceReport } from './pages/manager/DailyAttendanceReport';
-import { MonthlyAttendanceReport } from './pages/manager/MonthlyAttendanceReport';
-import { HolidayManagement } from './pages/manager/HolidayManagement';
-import { LeaveApproval } from './pages/manager/LeaveApproval';
-import { ActivityLogs } from './pages/manager/ActivityLogs';
-import { TeamSettings } from './pages/manager/TeamSettings';
+const ManagerDashboard = lazy(() => import('./pages/manager/Dashboard').then(m => ({ default: m.ManagerDashboard })));
+const UserManagement = lazy(() => import('./pages/manager/UserManagement').then(m => ({ default: m.UserManagement })));
+const AttendanceManagement = lazy(() => import('./pages/manager/AttendanceManagement').then(m => ({ default: m.AttendanceManagement })));
+const DailyAttendanceReport = lazy(() => import('./pages/manager/DailyAttendanceReport').then(m => ({ default: m.DailyAttendanceReport })));
+const MonthlyAttendanceReport = lazy(() => import('./pages/manager/MonthlyAttendanceReport').then(m => ({ default: m.MonthlyAttendanceReport })));
+const HolidayManagement = lazy(() => import('./pages/manager/HolidayManagement').then(m => ({ default: m.HolidayManagement })));
+const LeaveApproval = lazy(() => import('./pages/manager/LeaveApproval').then(m => ({ default: m.LeaveApproval })));
+const ActivityLogs = lazy(() => import('./pages/manager/ActivityLogs').then(m => ({ default: m.ActivityLogs })));
+const TeamSettings = lazy(() => import('./pages/manager/TeamSettings').then(m => ({ default: m.TeamSettings })));
 
 // Super Admin Pages
-import { TeamManagement } from './pages/super-admin/TeamManagement';
-import { SuperAdminUserManagement } from './pages/super-admin/UserManagement';
+const TeamManagement = lazy(() => import('./pages/super-admin/TeamManagement').then(m => ({ default: m.TeamManagement })));
+const SuperAdminUserManagement = lazy(() => import('./pages/super-admin/UserManagement').then(m => ({ default: m.SuperAdminUserManagement })));
 
 const RootRedirect = () => {
   const { user, loading } = useAuth();
@@ -85,20 +88,21 @@ function App() {
           }}
         />
 
-        <Routes>
-          {/* Root */}
-          <Route path="/" element={<RootRedirect />} />
+        <Suspense fallback={<Loading fullScreen />}>
+          <Routes>
+            {/* Root */}
+            <Route path="/" element={<RootRedirect />} />
 
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/register"
-            element={
-              <ProtectedRegisterRoute>
-                <Register />
-              </ProtectedRegisterRoute>
-            }
-          />
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/register"
+              element={
+                <ProtectedRegisterRoute>
+                  <Register />
+                </ProtectedRegisterRoute>
+              }
+            />
 
           {/* Employee Routes */}
           <Route
@@ -229,6 +233,7 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

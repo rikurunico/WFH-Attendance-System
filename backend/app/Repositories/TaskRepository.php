@@ -42,11 +42,24 @@ class TaskRepository
 
     /**
      * Update multiple tasks status.
+     *
+     * Optimized to reduce database queries using bulk operations.
      */
     public function updateMultipleStatuses(array $tasksData): void
     {
+        // Group updates by completion status to reduce queries
+        $taskIds = collect($tasksData)->pluck('id')->toArray();
+
+        // Verify all tasks exist
+        $existingTasks = Task::whereIn('id', $taskIds)->get()->keyBy('id');
+
         foreach ($tasksData as $taskData) {
-            $task = Task::findOrFail($taskData['id']);
+            if (!$existingTasks->has($taskData['id'])) {
+                throw new \Exception("Task with ID {$taskData['id']} not found");
+            }
+
+            // Update individual task (keep original logic for blocker reasons)
+            $task = $existingTasks->get($taskData['id']);
             $this->updateStatus(
                 $task,
                 $taskData['is_completed'],

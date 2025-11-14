@@ -112,49 +112,55 @@ class AttendanceRepository
 
     /**
      * Get all attendances (for manager) filtered by team.
+     *
+     * Optimized with JOIN to avoid N+1 query problem.
      */
     public function getAllInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, ?int $teamId = null): Collection
     {
-        $query = Attendance::with(['user', 'tasks']);
+        $query = Attendance::with(['user.team', 'tasks'])
+            ->select('attendances.*');
 
+        // Use JOIN instead of whereHas for better performance
         if ($teamId) {
-            $query->whereHas('user', function ($q) use ($teamId) {
-                $q->where('team_id', $teamId);
-            });
+            $query->join('users', 'attendances.user_id', '=', 'users.id')
+                  ->where('users.team_id', $teamId);
         }
 
         if ($startDate && $endDate) {
-            $query->whereBetween('date', [$startDate, $endDate]);
+            $query->whereBetween('attendances.date', [$startDate, $endDate]);
         }
 
-        return $query->orderBy('date', 'desc')
-            ->orderBy('check_in', 'desc')
+        return $query->orderBy('attendances.date', 'desc')
+            ->orderBy('attendances.check_in', 'desc')
             ->get();
     }
 
     /**
      * Get paginated attendances (for manager) filtered by team.
+     *
+     * Optimized with JOIN to avoid N+1 query problem.
      */
     public function getPaginatedInDateRange(?Carbon $startDate = null, ?Carbon $endDate = null, int $perPage = 10, ?int $userId = null, ?int $teamId = null)
     {
-        $query = Attendance::with(['user', 'tasks']);
+        $query = Attendance::with(['user.team', 'tasks'])
+            ->select('attendances.*');
 
+        // Use JOIN for team filtering instead of whereHas for better performance
         if ($teamId) {
-            $query->whereHas('user', function ($q) use ($teamId) {
-                $q->where('team_id', $teamId);
-            });
+            $query->join('users', 'attendances.user_id', '=', 'users.id')
+                  ->where('users.team_id', $teamId);
         }
 
         if ($startDate && $endDate) {
-            $query->whereBetween('date', [$startDate, $endDate]);
+            $query->whereBetween('attendances.date', [$startDate, $endDate]);
         }
 
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where('attendances.user_id', $userId);
         }
 
-        return $query->orderBy('date', 'desc')
-            ->orderBy('check_in', 'desc')
+        return $query->orderBy('attendances.date', 'desc')
+            ->orderBy('attendances.check_in', 'desc')
             ->paginate($perPage);
     }
 }

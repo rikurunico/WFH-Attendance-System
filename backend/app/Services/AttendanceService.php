@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceService
 {
@@ -76,6 +77,10 @@ class AttendanceService
             );
 
             DB::commit();
+
+            // Clear cache after successful check-in
+            $this->clearTodayStatusCache($user);
+
             return $attendance->load('tasks');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -124,6 +129,10 @@ class AttendanceService
             );
 
             DB::commit();
+
+            // Clear cache after successful check-out
+            $this->clearTodayStatusCache($user);
+
             return $attendance->fresh(['tasks']);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -143,67 +152,83 @@ class AttendanceService
 
     /**
      * Get today's status for user.
+     *
+     * Cached for 30 seconds to reduce database load while keeping elapsed hours relatively accurate.
+     * Cache is invalidated on check-in/check-out.
      */
     public function getTodayStatus(User $user): array
     {
-        $user->loadMissing('team');
+        $cacheKey = "attendance_today_status_{$user->id}_" . Carbon::today()->toDateString();
 
-        $today = Carbon::today();
-        $activeAttendance = $this->attendanceRepository->findActiveByUser($user);
-        $todayAttendances = $this->attendanceRepository->getAllByUserAndDate($user, $today);
+        return Cache::remember($cacheKey, 30, function () use ($user) {
+            $user->loadMissing('team');
 
-        $todayTotalHours = $todayAttendances->sum('total_hours');
+            $today = Carbon::today();
+            $activeAttendance = $this->attendanceRepository->findActiveByUser($user);
+            $todayAttendances = $this->attendanceRepository->getAllByUserAndDate($user, $today);
 
-        if ($activeAttendance) {
-            $elapsedHours = $this->calculateTotalHours($activeAttendance->check_in, Carbon::now());
-            $todayTotalHours += $elapsedHours;
-        }
+            $todayTotalHours = $todayAttendances->sum('total_hours');
 
-        $previousSessions = $todayAttendances
-            ->where('id', '!=', $activeAttendance?->id)
-            ->map(function ($attendance) {
-                return [
-                    'check_in' => $attendance->check_in,
-                    'check_out' => $attendance->check_out,
-                    'total_hours' => $attendance->total_hours,
-                ];
-            })
-            ->values();
-
-        // Build current session data with proper null checks
-        $currentSession = null;
-        if ($activeAttendance) {
-            // Ensure tasks relation is loaded
-            if (!$activeAttendance->relationLoaded('tasks')) {
-                $activeAttendance->load('tasks');
+            if ($activeAttendance) {
+                $elapsedHours = $this->calculateTotalHours($activeAttendance->check_in, Carbon::now());
+                $todayTotalHours += $elapsedHours;
             }
-            
-            $currentSession = [
-                'id' => $activeAttendance->id,
-                'check_in' => $activeAttendance->check_in,
-                'elapsed_hours' => $this->calculateTotalHours($activeAttendance->check_in, Carbon::now()),
-                'tasks' => $activeAttendance->tasks->map(function ($task) {
+
+            $previousSessions = $todayAttendances
+                ->where('id', '!=', $activeAttendance?->id)
+                ->map(function ($attendance) {
                     return [
-                        'id' => $task->id,
-                        'title' => $task->title,
-                        'is_completed' => $task->is_completed,
-                        'blocker_reason' => $task->blocker_reason,
+                        'check_in' => $attendance->check_in,
+                        'check_out' => $attendance->check_out,
+                        'total_hours' => $attendance->total_hours,
                     ];
-                })->toArray(),
+                })
+                ->values();
+
+            // Build current session data with proper null checks
+            $currentSession = null;
+            if ($activeAttendance) {
+                // Ensure tasks relation is loaded
+                if (!$activeAttendance->relationLoaded('tasks')) {
+                    $activeAttendance->load('tasks');
+                }
+
+                $currentSession = [
+                    'id' => $activeAttendance->id,
+                    'check_in' => $activeAttendance->check_in,
+                    'elapsed_hours' => $this->calculateTotalHours($activeAttendance->check_in, Carbon::now()),
+                    'tasks' => $activeAttendance->tasks->map(function ($task) {
+                        return [
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'is_completed' => $task->is_completed,
+                            'blocker_reason' => $task->blocker_reason,
+                        ];
+                    })->toArray(),
+                ];
+            }
+
+            $requiredWorkHours = $user->team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
+
+            return [
+                'date' => $today->toDateString(),
+                'is_checked_in' => $activeAttendance !== null,
+                'current_session' => $currentSession,
+                'today_total_hours' => $todayTotalHours,
+                'required_hours' => $requiredWorkHours,
+                'remaining_hours' => max(0, $requiredWorkHours - $todayTotalHours),
+                'previous_sessions' => $previousSessions,
             ];
-        }
+        });
+    }
 
-        $requiredWorkHours = $user->team?->getRequiredWorkHours() ?? Team::DEFAULT_REQUIRED_WORK_HOURS;
-
-        return [
-            'date' => $today->toDateString(),
-            'is_checked_in' => $activeAttendance !== null,
-            'current_session' => $currentSession,
-            'today_total_hours' => $todayTotalHours,
-            'required_hours' => $requiredWorkHours,
-            'remaining_hours' => max(0, $requiredWorkHours - $todayTotalHours),
-            'previous_sessions' => $previousSessions,
-        ];
+    /**
+     * Clear today status cache for user.
+     */
+    private function clearTodayStatusCache(User $user): void
+    {
+        $cacheKey = "attendance_today_status_{$user->id}_" . Carbon::today()->toDateString();
+        Cache::forget($cacheKey);
     }
 
     /**
