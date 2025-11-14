@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { Loading } from '../../components/common/Loading';
+import { EmployeeDashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { CheckInModal } from '../../components/attendance/CheckInModal';
 import { CheckOutModal } from '../../components/attendance/CheckOutModal';
 import { useAttendanceStatus } from '../../hooks/useAttendanceStatus';
@@ -65,7 +65,7 @@ export const EmployeeDashboard = () => {
   if (isLoading) {
     return (
       <MainLayout>
-        <Loading />
+        <EmployeeDashboardSkeleton />
       </MainLayout>
     );
   }

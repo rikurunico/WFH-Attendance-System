@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
-import { Loading } from '../../components/common/Loading';
+import { ManagerDashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { getManagerDashboard } from '../../api/manager.api';
 import { formatTime, formatHours, getTodayDate } from '../../utils/dateHelpers';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -38,7 +38,7 @@ export const ManagerDashboard = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ManagerDashboardSkeleton />
       </MainLayout>
     );
   }
