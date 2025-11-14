@@ -3,7 +3,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { Modal } from '../../components/common/Modal';
 import { Pagination } from '../../components/common/Pagination';
 import { getAllUsers, createUser, updateUser, deleteUser } from '../../api/manager.api';
@@ -178,7 +178,7 @@ export const UserManagement = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

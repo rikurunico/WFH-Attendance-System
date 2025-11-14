@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { Modal } from '../../components/common/Modal';
 import { getAllLeaveRequests, approveLeave, rejectLeave } from '../../api/manager.api';
 import { formatDate } from '../../utils/dateHelpers';
@@ -99,7 +99,7 @@ export const LeaveApproval = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

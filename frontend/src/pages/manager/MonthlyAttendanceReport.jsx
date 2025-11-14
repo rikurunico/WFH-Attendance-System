@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { Modal } from '../../components/common/Modal';
 import { getMonthlyAttendanceReport } from '../../api/manager.api';
 import { formatDate, formatTime, formatHours, getMonthStart, getMonthEnd } from '../../utils/dateHelpers';
@@ -72,7 +72,7 @@ export const MonthlyAttendanceReport = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

@@ -3,7 +3,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { getTeamSettings, updateTeamSettings } from '../../api/team.api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Building2, Clock, Calendar, Save } from 'lucide-react';
@@ -69,7 +69,7 @@ export const TeamSettings = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

@@ -3,7 +3,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { Modal } from '../../components/common/Modal';
 import { requestLeave, getMyLeaveRequests, getLeaveSummary } from '../../api/leave.api';
 import { formatDate } from '../../utils/dateHelpers';
@@ -106,7 +106,7 @@ export const MyLeave = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

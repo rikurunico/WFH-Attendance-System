@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { getAllTeams, createTeam, updateTeam, deleteTeam } from '../../api/team.api';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { Building2, Plus, Edit2, Trash2, Users, CheckCircle, XCircle } from 'lucide-react';
@@ -116,7 +116,7 @@ export const TeamManagement = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }

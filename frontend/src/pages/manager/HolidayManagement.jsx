@@ -3,7 +3,7 @@ import { MainLayout } from '../../components/layout/MainLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
-import { Loading } from '../../components/common/Loading';
+import { ReportSkeleton } from '../../components/common/DashboardSkeleton';
 import { Modal } from '../../components/common/Modal';
 import { getHolidays } from '../../api/holiday.api';
 import { createHoliday, updateHoliday, deleteHoliday } from '../../api/manager.api';
@@ -123,7 +123,7 @@ export const HolidayManagement = () => {
   if (loading) {
     return (
       <MainLayout>
-        <Loading />
+        <ReportSkeleton />
       </MainLayout>
     );
   }
